@@ -21,7 +21,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
-        run: npx eslint src/ --ext .ts
+        run: npx eslint src/
 
       - name: Test
         run: npm test
