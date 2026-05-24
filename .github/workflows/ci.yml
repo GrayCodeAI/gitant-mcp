@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Security audit
+        run: npm audit --audit-level=high
+
       - name: Verify dist is in sync
         run: |
           git diff --exit-code dist/ || (echo "dist/ is out of sync with source. Run 'npm run build' and commit." && exit 1)

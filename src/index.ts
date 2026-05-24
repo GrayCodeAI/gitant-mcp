@@ -30,13 +30,13 @@ server.tool("list_repos", "List repositories on this node", {}, async () => {
 });
 
 server.tool("get_repo", "Get repository metadata, refs, and latest commit", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}`));
 });
 
 server.tool("create_repo", "Create a new repository", {
-  name: z.string().describe("Repository name"),
+  name: z.string().min(1).max(64).describe("Repository name"),
   description: z.string().optional().describe("Repository description"),
   private: z.boolean().optional().describe("Whether the repo is private"),
 }, async ({ name, description, private: isPrivate }) => {
@@ -48,20 +48,20 @@ server.tool("create_repo", "Create a new repository", {
 });
 
 server.tool("delete_repo", "Delete a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}`));
 });
 
 server.tool("fork_repository", "Fork a repository", {
-  repo: z.string().describe("Source repository name"),
-  name: z.string().describe("Name for the forked repository"),
+  repo: z.string().min(1).max(64).describe("Source repository name"),
+  name: z.string().min(1).max(64).describe("Name for the forked repository"),
 }, async ({ repo, name }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/fork`, { name }));
 });
 
 server.tool("push_code", "Push code changes to a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   ref_updates: z.array(z.object({
     name: z.string(),
     old_hash: z.string(),
@@ -71,23 +71,17 @@ server.tool("push_code", "Push code changes to a repository", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/push`, { ref_updates }));
 });
 
-server.tool("pull_code", "Pull latest changes from a repository", {
-  repo: z.string().describe("Repository name"),
+server.tool("clone_repo", "Clone/pull a repository (optionally specify branch)", {
+  repo: z.string().min(1).max(64).describe("Repository name or URL"),
   branch: z.string().optional().describe("Branch to pull"),
 }, async ({ repo, branch }) => {
   const query = branch ? `?branch=${encodeURIComponent(branch)}` : "";
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/clone${query}`));
 });
 
-server.tool("clone_repo", "Clone a repository to local", {
-  repo: z.string().describe("Repository name or URL"),
-}, async ({ repo }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/clone`));
-});
-
 // File tools
 server.tool("get_file", "Get file contents from a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   path: z.string().describe("File path"),
   ref: z.string().optional().describe("Git ref (branch/tag/commit)"),
 }, async ({ repo, path, ref }) => {
@@ -96,7 +90,7 @@ server.tool("get_file", "Get file contents from a repository", {
 });
 
 server.tool("list_files", "List files in a repository directory", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   path: z.string().optional().describe("Directory path (default: root)"),
   ref: z.string().optional().describe("Git ref (branch/tag/commit)"),
 }, async ({ repo, path, ref }) => {
@@ -108,7 +102,7 @@ server.tool("list_files", "List files in a repository directory", {
 });
 
 server.tool("search_code", "Search for text in repository code", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   query: z.string().describe("Search query"),
   ref: z.string().optional().describe("Git ref to search in"),
 }, async ({ repo, query, ref }) => {
@@ -119,7 +113,7 @@ server.tool("search_code", "Search for text in repository code", {
 
 // Issue tools
 server.tool("create_issue", "Create a new issue in a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("Issue title"),
   body: z.string().optional().describe("Issue body/description"),
   labels: z.array(z.string()).optional().describe("Labels for the issue"),
@@ -132,7 +126,7 @@ server.tool("create_issue", "Create a new issue in a repository", {
 });
 
 server.tool("list_issues", "List issues in a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "all"]).optional().describe("Filter by status"),
   labels: z.array(z.string()).optional().describe("Filter by labels"),
 }, async ({ repo, status, labels }) => {
@@ -144,22 +138,22 @@ server.tool("list_issues", "List issues in a repository", {
 });
 
 server.tool("close_issue", "Close an issue", {
-  repo: z.string().describe("Repository name"),
-  issue_number: z.number().describe("Issue number to close"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_number: z.number().int().positive().describe("Issue number to close"),
 }, async ({ repo, issue_number }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/close`));
 });
 
 server.tool("get_issue", "Get details of a specific issue", {
-  repo: z.string().describe("Repository name"),
-  issue_number: z.number().describe("Issue number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_number: z.number().int().positive().describe("Issue number"),
 }, async ({ repo, issue_number }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}`));
 });
 
 // Pull Request tools
 server.tool("open_pr", "Open a new pull request", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("PR title"),
   body: z.string().optional().describe("PR description"),
   source_branch: z.string().describe("Source branch"),
@@ -174,7 +168,7 @@ server.tool("open_pr", "Open a new pull request", {
 });
 
 server.tool("list_prs", "List pull requests in a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "merged", "all"]).optional().describe("Filter by status"),
 }, async ({ repo, status }) => {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
@@ -182,15 +176,15 @@ server.tool("list_prs", "List pull requests in a repository", {
 });
 
 server.tool("get_pr", "Get details of a specific pull request", {
-  repo: z.string().describe("Repository name"),
-  pr_number: z.number().describe("PR number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  pr_number: z.number().int().positive().describe("PR number"),
 }, async ({ repo, pr_number }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}`));
 });
 
 server.tool("review_pr", "Review a pull request", {
-  repo: z.string().describe("Repository name"),
-  pr_number: z.number().describe("PR number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  pr_number: z.number().int().positive().describe("PR number"),
   verdict: z.enum(["approve", "request_changes", "comment"]).describe("Review verdict"),
   body: z.string().optional().describe("Review comment"),
 }, async ({ repo, pr_number, verdict, body }) => {
@@ -201,8 +195,8 @@ server.tool("review_pr", "Review a pull request", {
 });
 
 server.tool("merge_pr", "Merge a pull request", {
-  repo: z.string().describe("Repository name"),
-  pr_number: z.number().describe("PR number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  pr_number: z.number().int().positive().describe("PR number"),
   merge_method: z.enum(["merge", "squash", "rebase"]).optional().describe("Merge strategy"),
 }, async ({ repo, pr_number, merge_method }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}/merge`, {
@@ -212,13 +206,13 @@ server.tool("merge_pr", "Merge a pull request", {
 
 // Ref tools
 server.tool("list_refs", "List all refs (branches, tags) in a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/refs`));
 });
 
 server.tool("create_branch", "Create a new branch in a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   name: z.string().describe("Branch name"),
   commit: z.string().describe("Commit hash to point to"),
 }, async ({ repo, name, commit }) => {
@@ -227,9 +221,9 @@ server.tool("create_branch", "Create a new branch in a repository", {
 
 // Commit tools
 server.tool("get_commit_log", "Get commit history for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   ref: z.string().optional().describe("Branch or tag name"),
-  limit: z.number().optional().describe("Max number of commits to return"),
+  limit: z.number().int().positive().max(10000).optional().describe("Max number of commits to return"),
 }, async ({ repo, ref, limit }) => {
   const params = new URLSearchParams();
   if (ref) params.set("ref", ref);
@@ -239,11 +233,18 @@ server.tool("get_commit_log", "Get commit history for a repository", {
 });
 
 server.tool("diff_commits", "Compare two commits and show changes", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   from: z.string().describe("From commit hash"),
   to: z.string().describe("To commit hash"),
 }, async ({ repo, from, to }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`));
+});
+
+server.tool("get_commit_parents", "Get the parent commits of a specific commit", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  hash: z.string().describe("Commit hash"),
+}, async ({ repo, hash }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/commits/${encodeURIComponent(hash)}/parents`));
 });
 
 // Agent tools
@@ -265,17 +266,17 @@ server.tool("revoke_ucan", "Revoke a UCAN token by its nonce", {
   return daemonCall(() => daemon.post("/api/v1/ucan/revoke", { nonce }));
 });
 
+server.tool("verify_ucan", "Verify a UCAN token's validity and signature", {
+  token: z.string().describe("UCAN token to verify"),
+}, async ({ token }) => {
+  return daemonCall(() => daemon.post("/api/v1/agents/verify", { token }));
+});
+
 server.tool("list_revocations", "List all revoked UCAN nonces", {}, async () => {
   return daemonCall(() => daemon.get("/api/v1/ucan/revocations"));
 });
 
-server.tool("get_agent_profile", "Get an agent's profile and capabilities", {
-  did: z.string().describe("Agent DID"),
-}, async ({ did }) => {
-  return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}`));
-});
-
-server.tool("get_trust_score", "Get the trust score for an agent", {
+server.tool("get_agent_profile", "Get an agent's profile, capabilities, and trust score", {
   did: z.string().describe("Agent DID"),
 }, async ({ did }) => {
   return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}`));
@@ -323,15 +324,15 @@ server.tool("resolve_did", "Resolve a DID to its document", {
 
 // Task tools
 server.tool("list_tasks", "List tasks for a repository", {
-  repo: z.string().describe("Repository name"),
-  status: z.string().optional().describe("Filter by status: open, claimed, completed"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  status: z.enum(["open", "claimed", "completed"]).optional().describe("Filter by status"),
 }, async ({ repo, status }) => {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/tasks${query}`));
 });
 
 server.tool("create_task", "Create a new task for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("Task title"),
   description: z.string().optional().describe("Task description"),
 }, async ({ repo, title, description }) => {
@@ -339,14 +340,14 @@ server.tool("create_task", "Create a new task for a repository", {
 });
 
 server.tool("claim_task", "Claim a task", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   task_id: z.string().describe("Task ID"),
 }, async ({ repo, task_id }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tasks/${encodeURIComponent(task_id)}/claim`));
 });
 
 server.tool("complete_task", "Complete a task", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   task_id: z.string().describe("Task ID"),
   result: z.string().optional().describe("Task result"),
 }, async ({ repo, task_id, result }) => {
@@ -355,20 +356,20 @@ server.tool("complete_task", "Complete a task", {
 
 // Release tools
 server.tool("list_releases", "List releases for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases`));
 });
 
 server.tool("get_release", "Get a specific release", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   release_id: z.string().describe("Release ID"),
 }, async ({ repo, release_id }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases/${encodeURIComponent(release_id)}`));
 });
 
 server.tool("create_release", "Create a new release for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   tag: z.string().describe("Git tag for the release"),
   title: z.string().describe("Release title"),
   body: z.string().optional().describe("Release notes / body"),
@@ -377,7 +378,7 @@ server.tool("create_release", "Create a new release for a repository", {
 });
 
 server.tool("delete_release", "Delete a release", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   release_id: z.string().describe("Release ID"),
 }, async ({ repo, release_id }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/releases/${encodeURIComponent(release_id)}`));
@@ -385,21 +386,21 @@ server.tool("delete_release", "Delete a release", {
 
 // Label tools
 server.tool("list_labels", "List labels for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/labels`));
 });
 
 server.tool("create_label", "Create a label for a repository", {
-  repo: z.string().describe("Repository name"),
-  name: z.string().describe("Label name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().min(1).max(64).describe("Label name"),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("Label color (hex, e.g. #ff0000)"),
 }, async ({ repo, name, color }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/labels`, { name, color }));
 });
 
 server.tool("delete_label", "Delete a label from a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   name: z.string().describe("Label name"),
 }, async ({ repo, name }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/labels/${encodeURIComponent(name)}`));
@@ -407,27 +408,33 @@ server.tool("delete_label", "Delete a label from a repository", {
 
 // Star tools
 server.tool("star_repo", "Star a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/star`));
 });
 
 server.tool("unstar_repo", "Unstar a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/unstar`));
 });
 
+server.tool("get_star_count", "Get the star count for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stars`));
+});
+
 // Branch protection tools
 server.tool("get_branch_protection", "Get protection rules for a branch", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
 }, async ({ repo, branch }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`));
 });
 
 server.tool("set_branch_protection", "Set protection rules for a branch", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
   require_pr: z.boolean().optional().describe("Require pull request before merging"),
   require_approval: z.boolean().optional().describe("Require approval before merging"),
@@ -441,39 +448,77 @@ server.tool("set_branch_protection", "Set protection rules for a branch", {
 });
 
 server.tool("remove_branch_protection", "Remove protection rules for a branch", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
 }, async ({ repo, branch }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`));
 });
 
 server.tool("list_branch_protections", "List all branch protection rules for a repository", {
-  repo: z.string().describe("Repository name"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/protections`));
 });
 
 // Activity tools
 server.tool("get_activity", "Get unified activity feed across all repos", {
-  limit: z.number().optional().describe("Max number of events to return"),
+  limit: z.number().int().positive().max(10000).optional().describe("Max number of events to return"),
 }, async ({ limit }) => {
   const query = limit ? `?limit=${limit}` : "";
   return daemonCall(() => daemon.get(`/api/v1/activity${query}`));
 });
 
 // Comment tools
+server.tool("add_issue_comment", "Add a comment to an issue", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_number: z.number().int().positive().describe("Issue number"),
+  body: z.string().min(1).max(65536).describe("Comment body"),
+}, async ({ repo, issue_number, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comment`, { body }));
+});
+
 server.tool("list_issue_comments", "List comments on an issue", {
-  repo: z.string().describe("Repository name"),
-  issue_number: z.number().describe("Issue number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_number: z.number().int().positive().describe("Issue number"),
 }, async ({ repo, issue_number }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comments`));
 });
 
+server.tool("add_issue_comment", "Add a comment to an issue", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_number: z.number().int().positive().describe("Issue number"),
+  body: z.string().min(1).describe("Comment body"),
+}, async ({ repo, issue_number, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comment`, { body }));
+});
+
 server.tool("list_pr_comments", "List comments on a pull request", {
-  repo: z.string().describe("Repository name"),
-  pr_number: z.number().describe("PR number"),
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  pr_number: z.number().int().positive().describe("PR number"),
 }, async ({ repo, pr_number }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}/comments`));
+});
+
+// Star count tool
+server.tool("get_star_count", "Get the number of stars for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stars`));
+});
+
+// Commit parents tool
+server.tool("get_commit_parents", "Get parent commits of a commit", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  commit_hash: z.string().describe("Commit hash"),
+}, async ({ repo, commit_hash }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/commits/${encodeURIComponent(commit_hash)}/parents`));
+});
+
+// UCAN verification tool
+server.tool("verify_ucan", "Verify a UCAN token", {
+  token: z.string().describe("UCAN token to verify"),
+}, async ({ token }) => {
+  return daemonCall(() => daemon.post("/api/v1/agents/verify", { token }));
 });
 
 // Start the server
