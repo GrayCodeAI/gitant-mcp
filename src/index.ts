@@ -353,6 +353,36 @@ server.tool("complete_task", "Complete a task", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tasks/${encodeURIComponent(task_id)}/complete`, { result }));
 });
 
+// Release tools
+server.tool("list_releases", "List releases for a repository", {
+  repo: z.string().describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases`));
+});
+
+server.tool("get_release", "Get a specific release", {
+  repo: z.string().describe("Repository name"),
+  release_id: z.string().describe("Release ID"),
+}, async ({ repo, release_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases/${encodeURIComponent(release_id)}`));
+});
+
+server.tool("create_release", "Create a new release for a repository", {
+  repo: z.string().describe("Repository name"),
+  tag: z.string().describe("Git tag for the release"),
+  title: z.string().describe("Release title"),
+  body: z.string().optional().describe("Release notes / body"),
+}, async ({ repo, tag, title, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/releases`, { tag, title, body: body || "" }));
+});
+
+server.tool("delete_release", "Delete a release", {
+  repo: z.string().describe("Repository name"),
+  release_id: z.string().describe("Release ID"),
+}, async ({ repo, release_id }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/releases/${encodeURIComponent(release_id)}`));
+});
+
 // Label tools
 server.tool("list_labels", "List labels for a repository", {
   repo: z.string().describe("Repository name"),
