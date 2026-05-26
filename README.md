@@ -55,13 +55,16 @@ Local dev without publish:
 }
 ```
 
-## Tools (59)
+## Tools (60)
 
 ### System
 - `get_daemon_status` — Health + node status
 - `list_repos`, `get_repo`, `create_repo`, `delete_repo`, `fork_repository`
 - `push_code` — Push git objects + ref updates
+- `push_packfile` — Push base64-encoded packfile + ref updates
 - `clone_repo`
+
+List tools accept optional `offset` and `limit` pagination parameters.
 
 ### Files & search
 - `get_file`, `list_files`, `search_code`
