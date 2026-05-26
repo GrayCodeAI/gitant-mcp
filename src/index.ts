@@ -53,6 +53,17 @@ server.tool("get_daemon_status", "Get daemon health and node status", {}, async 
   });
 });
 
+server.tool("get_network_status", "Get libp2p peer count and connected peers", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/network/peers"));
+});
+
+server.tool("discover_federation", "Discover federated gitant nodes on the P2P network", {
+  did: z.string().optional().describe("Optional DID to look up in the DHT"),
+}, async ({ did }) => {
+  const query = did ? `?did=${encodeURIComponent(did)}` : "";
+  return daemonCall(() => daemon.get(`/api/v1/federation/discover${query}`));
+});
+
 server.tool("get_repo", "Get repository metadata, refs, and latest commit", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {

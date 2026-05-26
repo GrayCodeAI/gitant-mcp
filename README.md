@@ -55,10 +55,12 @@ Local dev without publish:
 }
 ```
 
-## Tools (60)
+## Tools (62)
 
 ### System
 - `get_daemon_status` — Health + node status
+- `get_network_status` — libp2p peers and listen addresses
+- `discover_federation` — Federated node discovery (requires `--p2p`)
 - `list_repos`, `get_repo`, `create_repo`, `delete_repo`, `fork_repository`
 - `push_code` — Push git objects + ref updates
 - `push_packfile` — Push base64-encoded packfile + ref updates
