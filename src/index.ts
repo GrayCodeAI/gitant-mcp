@@ -36,11 +36,11 @@ const paginationSchema = {
 };
 
 // Repository tools
-server.tool("list_repos", "List repositories on this node", paginationSchema, async ({ offset, limit }) => {
+server.tool("gitant_list_repos", "List repositories on this node", paginationSchema, async ({ offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos${paginationQuery(offset, limit)}`));
 });
 
-server.tool("get_daemon_status", "Get daemon health and node status", {}, async () => {
+server.tool("gitant_get_daemon_status", "Get daemon health and node status", {}, async () => {
   return daemonCall(async () => {
     const [health, status] = await Promise.all([
       daemon.get<{ status: string }>("/health"),
@@ -50,22 +50,22 @@ server.tool("get_daemon_status", "Get daemon health and node status", {}, async 
   });
 });
 
-server.tool("get_network_status", "Get libp2p peer count and connected peers", {}, async () => {
+server.tool("gitant_get_network_status", "Get libp2p peer count and connected peers", {}, async () => {
   return daemonCall(() => daemon.get("/api/v1/network/peers"));
 });
 
-server.tool("discover_federation", "Discover federated gitant nodes on the P2P network", {
+server.tool("gitant_discover_federation", "Discover federated gitant nodes on the P2P network", {
   did: z.string().optional().describe("Optional DID to look up in the DHT"),
 }, async ({ did }) => {
   const query = did ? `?did=${encodeURIComponent(did)}` : "";
   return daemonCall(() => daemon.get(`/api/v1/federation/discover${query}`));
 });
 
-server.tool("get_bootstrap_peers", "List configured federation bootstrap multiaddrs", {}, async () => {
+server.tool("gitant_get_bootstrap_peers", "List configured federation bootstrap multiaddrs", {}, async () => {
   return daemonCall(() => daemon.get("/api/v1/network/bootstrap"));
 });
 
-server.tool("attest_agent", "Publish a cross-peer trust attestation for an agent DID", {
+server.tool("gitant_attest_agent", "Publish a cross-peer trust attestation for an agent DID", {
   did: z.string().describe("Target agent DID"),
   score: z.number().min(0).max(1).describe("Trust score between 0 and 1"),
   reason: z.string().optional().describe("Optional attestation reason"),
@@ -73,13 +73,13 @@ server.tool("attest_agent", "Publish a cross-peer trust attestation for an agent
   return daemonCall(() => daemon.post(`/api/v1/agents/${encodeURIComponent(did)}/attest`, { score, reason }));
 });
 
-server.tool("get_repo", "Get repository metadata, refs, and latest commit", {
+server.tool("gitant_get_repo", "Get repository metadata, refs, and latest commit", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}`));
 });
 
-server.tool("create_repo", "Create a new repository", {
+server.tool("gitant_create_repo", "Create a new repository", {
   name: z.string().min(1).max(64).describe("Repository name"),
   description: z.string().optional().describe("Repository description"),
   private: z.boolean().optional().describe("Whether the repo is private"),
@@ -91,20 +91,20 @@ server.tool("create_repo", "Create a new repository", {
   }));
 });
 
-server.tool("delete_repo", "Delete a repository", {
+server.tool("gitant_delete_repo", "Delete a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}`));
 });
 
-server.tool("fork_repository", "Fork a repository", {
+server.tool("gitant_fork_repository", "Fork a repository", {
   repo: z.string().min(1).max(64).describe("Source repository name"),
   name: z.string().min(1).max(64).describe("Name for the forked repository"),
 }, async ({ repo, name }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/fork`, { name }));
 });
 
-server.tool("push_code", "Push git objects and ref updates to a repository", {
+server.tool("gitant_push_code", "Push git objects and ref updates to a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   objects: z.array(z.object({
     hash: z.string().describe("Git object hash"),
@@ -123,7 +123,7 @@ server.tool("push_code", "Push git objects and ref updates to a repository", {
   }));
 });
 
-server.tool("push_packfile", "Push a base64-encoded git packfile and ref updates", {
+server.tool("gitant_push_packfile", "Push a base64-encoded git packfile and ref updates", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   packfile: z.string().describe("Base64-encoded git packfile"),
   ref_updates: z.array(z.object({
@@ -138,7 +138,7 @@ server.tool("push_packfile", "Push a base64-encoded git packfile and ref updates
   }));
 });
 
-server.tool("clone_repo", "Clone/pull a repository (optionally specify branch)", {
+server.tool("gitant_clone_repo", "Clone/pull a repository (optionally specify branch)", {
   repo: z.string().min(1).max(64).describe("Repository name or URL"),
   branch: z.string().optional().describe("Branch to pull"),
 }, async ({ repo, branch }) => {
@@ -147,7 +147,7 @@ server.tool("clone_repo", "Clone/pull a repository (optionally specify branch)",
 });
 
 // File tools
-server.tool("get_file", "Get file contents from a repository", {
+server.tool("gitant_get_file", "Get file contents from a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   path: z.string().describe("File path"),
   ref: z.string().optional().describe("Git ref (branch/tag/commit)"),
@@ -156,7 +156,7 @@ server.tool("get_file", "Get file contents from a repository", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/files/${encodeURIComponent(path)}${query}`));
 });
 
-server.tool("list_files", "List files in a repository directory", {
+server.tool("gitant_list_files", "List files in a repository directory", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   path: z.string().optional().describe("Directory path (default: root)"),
   ref: z.string().optional().describe("Git ref (branch/tag/commit)"),
@@ -168,7 +168,7 @@ server.tool("list_files", "List files in a repository directory", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/files${query}`));
 });
 
-server.tool("search_code", "Search for text in repository code", {
+server.tool("gitant_search_code", "Search for text in repository code", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   query: z.string().describe("Search query"),
   ref: z.string().optional().describe("Git ref to search in"),
@@ -179,7 +179,7 @@ server.tool("search_code", "Search for text in repository code", {
 });
 
 // Issue tools
-server.tool("create_issue", "Create a new issue in a repository", {
+server.tool("gitant_create_issue", "Create a new issue in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("Issue title"),
   body: z.string().optional().describe("Issue body/description"),
@@ -192,7 +192,7 @@ server.tool("create_issue", "Create a new issue in a repository", {
   }));
 });
 
-server.tool("list_issues", "List issues in a repository", {
+server.tool("gitant_list_issues", "List issues in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "all"]).optional().describe("Filter by status"),
   labels: z.array(z.string()).optional().describe("Filter by labels"),
@@ -202,14 +202,14 @@ server.tool("list_issues", "List issues in a repository", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues${query}`));
 });
 
-server.tool("close_issue", "Close an issue", {
+server.tool("gitant_close_issue", "Close an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   issue_id: z.string().min(1).describe("Issue ID (e.g. issue-1734567890123456789)"),
 }, async ({ repo, issue_id }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/close`));
 });
 
-server.tool("get_issue", "Get details of a specific issue", {
+server.tool("gitant_get_issue", "Get details of a specific issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   issue_id: z.string().min(1).describe("Issue ID"),
 }, async ({ repo, issue_id }) => {
@@ -217,7 +217,7 @@ server.tool("get_issue", "Get details of a specific issue", {
 });
 
 // Pull Request tools
-server.tool("open_pr", "Open a new pull request", {
+server.tool("gitant_open_pr", "Open a new pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("PR title"),
   body: z.string().optional().describe("PR description"),
@@ -232,7 +232,7 @@ server.tool("open_pr", "Open a new pull request", {
   }));
 });
 
-server.tool("list_prs", "List pull requests in a repository", {
+server.tool("gitant_list_prs", "List pull requests in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "merged", "all"]).optional().describe("Filter by status"),
   ...paginationSchema,
@@ -241,14 +241,14 @@ server.tool("list_prs", "List pull requests in a repository", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs${query}`));
 });
 
-server.tool("get_pr", "Get details of a specific pull request", {
+server.tool("gitant_get_pr", "Get details of a specific pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   pr_id: z.string().min(1).describe("Pull request ID"),
 }, async ({ repo, pr_id }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}`));
 });
 
-server.tool("review_pr", "Review a pull request", {
+server.tool("gitant_review_pr", "Review a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   pr_id: z.string().min(1).describe("Pull request ID"),
   verdict: z.enum(["approve", "request_changes", "comment"]).describe("Review verdict"),
@@ -260,7 +260,7 @@ server.tool("review_pr", "Review a pull request", {
   }));
 });
 
-server.tool("merge_pr", "Merge a pull request", {
+server.tool("gitant_merge_pr", "Merge a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   pr_id: z.string().min(1).describe("Pull request ID"),
   merge_method: z.enum(["merge", "squash", "rebase"]).optional().describe("Merge strategy"),
@@ -271,13 +271,13 @@ server.tool("merge_pr", "Merge a pull request", {
 });
 
 // Ref tools
-server.tool("list_refs", "List all refs (branches, tags) in a repository", {
+server.tool("gitant_list_refs", "List all refs (branches, tags) in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/refs`));
 });
 
-server.tool("create_branch", "Create a new branch in a repository", {
+server.tool("gitant_create_branch", "Create a new branch in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   name: z.string().describe("Branch name"),
   commit: z.string().describe("Commit hash to point to"),
@@ -286,7 +286,7 @@ server.tool("create_branch", "Create a new branch in a repository", {
 });
 
 // Commit tools
-server.tool("get_commit_log", "Get commit history for a repository", {
+server.tool("gitant_get_commit_log", "Get commit history for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   ref: z.string().optional().describe("Branch or tag name"),
   limit: z.number().int().positive().max(10000).optional().describe("Max number of commits to return"),
@@ -298,7 +298,7 @@ server.tool("get_commit_log", "Get commit history for a repository", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/commits${query}`));
 });
 
-server.tool("diff_commits", "Compare two commits and show changes", {
+server.tool("gitant_diff_commits", "Compare two commits and show changes", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   from: z.string().describe("From commit hash"),
   to: z.string().describe("To commit hash"),
@@ -306,7 +306,7 @@ server.tool("diff_commits", "Compare two commits and show changes", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/diff?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`));
 });
 
-server.tool("get_commit_parents", "Get the parent commits of a specific commit", {
+server.tool("gitant_get_commit_parents", "Get the parent commits of a specific commit", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   hash: z.string().describe("Commit hash"),
 }, async ({ repo, hash }) => {
@@ -314,7 +314,7 @@ server.tool("get_commit_parents", "Get the parent commits of a specific commit",
 });
 
 // Agent tools
-server.tool("delegate_capability", "Delegate a capability to another agent using UCAN", {
+server.tool("gitant_delegate_capability", "Delegate a capability to another agent using UCAN", {
   did: z.string().describe("Audience DID"),
   resource: z.string().describe("Resource identifier"),
   actions: z.array(z.string()).describe("Allowed actions"),
@@ -326,34 +326,34 @@ server.tool("delegate_capability", "Delegate a capability to another agent using
   }));
 });
 
-server.tool("revoke_ucan", "Revoke a UCAN token by its nonce", {
+server.tool("gitant_revoke_ucan", "Revoke a UCAN token by its nonce", {
   nonce: z.string().describe("UCAN nonce to revoke"),
 }, async ({ nonce }) => {
   return daemonCall(() => daemon.post("/api/v1/ucan/revoke", { nonce }));
 });
 
-server.tool("verify_ucan", "Verify a UCAN token's validity and signature", {
+server.tool("gitant_verify_ucan", "Verify a UCAN token's validity and signature", {
   token: z.string().describe("UCAN token to verify"),
 }, async ({ token }) => {
   return daemonCall(() => daemon.post("/api/v1/agents/verify", { token }));
 });
 
-server.tool("list_revocations", "List all revoked UCAN nonces", {}, async () => {
+server.tool("gitant_list_revocations", "List all revoked UCAN nonces", {}, async () => {
   return daemonCall(() => daemon.get("/api/v1/ucan/revocations"));
 });
 
-server.tool("get_agent_profile", "Get an agent's profile, capabilities, and trust score", {
+server.tool("gitant_get_agent_profile", "Get an agent's profile, capabilities, and trust score", {
   did: z.string().describe("Agent DID"),
 }, async ({ did }) => {
   return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}`));
 });
 
 // Webhook tools
-server.tool("list_webhooks", "List registered webhooks", paginationSchema, async ({ offset, limit }) => {
+server.tool("gitant_list_webhooks", "List registered webhooks", paginationSchema, async ({ offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/webhooks${paginationQuery(offset, limit)}`));
 });
 
-server.tool("register_webhook", "Register a new webhook", {
+server.tool("gitant_register_webhook", "Register a new webhook", {
   url: z.string().url().describe("Webhook URL"),
   events: z.array(z.string()).min(1).describe("Event types to subscribe to"),
   secret: z.string().optional().describe("Webhook secret for signature verification"),
@@ -361,35 +361,35 @@ server.tool("register_webhook", "Register a new webhook", {
   return daemonCall(() => daemon.post("/api/v1/webhooks", { url, events, secret }));
 });
 
-server.tool("delete_webhook", "Delete a webhook", {
+server.tool("gitant_delete_webhook", "Delete a webhook", {
   webhook_id: z.string().describe("Webhook ID to delete"),
 }, async ({ webhook_id }) => {
   return daemonCall(() => daemon.delete(`/api/v1/webhooks/${encodeURIComponent(webhook_id)}`));
 });
 
 // Agent tools (extended)
-server.tool("list_agents", "List all known agents", paginationSchema, async ({ offset, limit }) => {
+server.tool("gitant_list_agents", "List all known agents", paginationSchema, async ({ offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/agents${paginationQuery(offset, limit)}`));
 });
 
-server.tool("get_agent", "Get details of a specific agent", {
+server.tool("gitant_get_agent", "Get details of a specific agent", {
   did: z.string().describe("Agent DID"),
 }, async ({ did }) => {
   return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}`));
 });
 
-server.tool("generate_did", "Generate a new DID identity", {}, async () => {
+server.tool("gitant_generate_did", "Generate a new DID identity", {}, async () => {
   return daemonCall(() => daemon.post("/api/v1/agents/generate-did"));
 });
 
-server.tool("resolve_did", "Resolve a DID to its document", {
+server.tool("gitant_resolve_did", "Resolve a DID to its document", {
   did: z.string().describe("DID to resolve"),
 }, async ({ did }) => {
   return daemonCall(() => daemon.get(`/api/v1/agents/resolve/${encodeURIComponent(did)}`));
 });
 
 // Task tools
-server.tool("list_tasks", "List tasks for a repository", {
+server.tool("gitant_list_tasks", "List tasks for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "claimed", "completed"]).optional().describe("Filter by status"),
   ...paginationSchema,
@@ -398,7 +398,7 @@ server.tool("list_tasks", "List tasks for a repository", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/tasks${query}`));
 });
 
-server.tool("create_task", "Create a new task for a repository", {
+server.tool("gitant_create_task", "Create a new task for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   title: z.string().describe("Task title"),
   description: z.string().optional().describe("Task description"),
@@ -406,14 +406,14 @@ server.tool("create_task", "Create a new task for a repository", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tasks`, { title, description }));
 });
 
-server.tool("claim_task", "Claim a task", {
+server.tool("gitant_claim_task", "Claim a task", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   task_id: z.string().describe("Task ID"),
 }, async ({ repo, task_id }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tasks/${encodeURIComponent(task_id)}/claim`));
 });
 
-server.tool("complete_task", "Complete a task", {
+server.tool("gitant_complete_task", "Complete a task", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   task_id: z.string().describe("Task ID"),
   result: z.string().optional().describe("Task result"),
@@ -422,21 +422,21 @@ server.tool("complete_task", "Complete a task", {
 });
 
 // Release tools
-server.tool("list_releases", "List releases for a repository", {
+server.tool("gitant_list_releases", "List releases for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   ...paginationSchema,
 }, async ({ repo, offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases${paginationQuery(offset, limit)}`));
 });
 
-server.tool("get_release", "Get a specific release", {
+server.tool("gitant_get_release", "Get a specific release", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   release_id: z.string().describe("Release ID"),
 }, async ({ repo, release_id }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases/${encodeURIComponent(release_id)}`));
 });
 
-server.tool("create_release", "Create a new release for a repository", {
+server.tool("gitant_create_release", "Create a new release for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   tag: z.string().describe("Git tag for the release"),
   title: z.string().describe("Release title"),
@@ -445,7 +445,7 @@ server.tool("create_release", "Create a new release for a repository", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/releases`, { tag, title, body: body || "" }));
 });
 
-server.tool("delete_release", "Delete a release", {
+server.tool("gitant_delete_release", "Delete a release", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   release_id: z.string().describe("Release ID"),
 }, async ({ repo, release_id }) => {
@@ -453,14 +453,14 @@ server.tool("delete_release", "Delete a release", {
 });
 
 // Label tools
-server.tool("list_labels", "List labels for a repository", {
+server.tool("gitant_list_labels", "List labels for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   ...paginationSchema,
 }, async ({ repo, offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/labels${paginationQuery(offset, limit)}`));
 });
 
-server.tool("create_label", "Create a label for a repository", {
+server.tool("gitant_create_label", "Create a label for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   name: z.string().min(1).max(64).describe("Label name"),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("Label color (hex, e.g. #ff0000)"),
@@ -468,7 +468,7 @@ server.tool("create_label", "Create a label for a repository", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/labels`, { name, color }));
 });
 
-server.tool("delete_label", "Delete a label from a repository", {
+server.tool("gitant_delete_label", "Delete a label from a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   name: z.string().describe("Label name"),
 }, async ({ repo, name }) => {
@@ -476,33 +476,33 @@ server.tool("delete_label", "Delete a label from a repository", {
 });
 
 // Star tools
-server.tool("star_repo", "Star a repository", {
+server.tool("gitant_star_repo", "Star a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/star`));
 });
 
-server.tool("unstar_repo", "Unstar a repository", {
+server.tool("gitant_unstar_repo", "Unstar a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/unstar`));
 });
 
-server.tool("get_star_count", "Get the star count for a repository", {
+server.tool("gitant_get_star_count", "Get the star count for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stars`));
 });
 
 // Branch protection tools
-server.tool("get_branch_protection", "Get protection rules for a branch", {
+server.tool("gitant_get_branch_protection", "Get protection rules for a branch", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
 }, async ({ repo, branch }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`));
 });
 
-server.tool("set_branch_protection", "Set protection rules for a branch", {
+server.tool("gitant_set_branch_protection", "Set protection rules for a branch", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
   require_pr: z.boolean().optional().describe("Require pull request before merging"),
@@ -516,28 +516,28 @@ server.tool("set_branch_protection", "Set protection rules for a branch", {
   }));
 });
 
-server.tool("remove_branch_protection", "Remove protection rules for a branch", {
+server.tool("gitant_remove_branch_protection", "Remove protection rules for a branch", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   branch: z.string().describe("Branch name"),
 }, async ({ repo, branch }) => {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`));
 });
 
-server.tool("list_branch_protections", "List all branch protection rules for a repository", {
+server.tool("gitant_list_branch_protections", "List all branch protection rules for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/protections`));
 });
 
 // Activity tools
-server.tool("get_activity", "Get unified activity feed across all repos", {
+server.tool("gitant_get_activity", "Get unified activity feed across all repos", {
   ...paginationSchema,
 }, async ({ offset, limit }) => {
   return daemonCall(() => daemon.get(`/api/v1/activity${paginationQuery(offset, limit)}`));
 });
 
 // Comment tools
-server.tool("add_issue_comment", "Add a comment to an issue", {
+server.tool("gitant_add_issue_comment", "Add a comment to an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   issue_id: z.string().min(1).describe("Issue ID"),
   body: z.string().min(1).max(65536).describe("Comment body"),
@@ -545,14 +545,14 @@ server.tool("add_issue_comment", "Add a comment to an issue", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/comment`, { body }));
 });
 
-server.tool("list_issue_comments", "List comments on an issue", {
+server.tool("gitant_list_issue_comments", "List comments on an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   issue_id: z.string().min(1).describe("Issue ID"),
 }, async ({ repo, issue_id }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/comments`));
 });
 
-server.tool("list_pr_comments", "List comments on a pull request", {
+server.tool("gitant_list_pr_comments", "List comments on a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   pr_id: z.string().min(1).describe("Pull request ID"),
 }, async ({ repo, pr_id }) => {
