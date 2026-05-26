@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -27,6 +28,16 @@ async function daemonCall<T>(fn: () => Promise<T>) {
 // Repository tools
 server.tool("list_repos", "List repositories on this node", {}, async () => {
   return daemonCall(() => daemon.get("/api/v1/repos"));
+});
+
+server.tool("get_daemon_status", "Get daemon health and node status", {}, async () => {
+  return daemonCall(async () => {
+    const [health, status] = await Promise.all([
+      daemon.get<{ status: string }>("/health"),
+      daemon.get("/api/v1/status"),
+    ]);
+    return { health, status };
+  });
 });
 
 server.tool("get_repo", "Get repository metadata, refs, and latest commit", {
@@ -60,15 +71,23 @@ server.tool("fork_repository", "Fork a repository", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/fork`, { name }));
 });
 
-server.tool("push_code", "Push code changes to a repository", {
+server.tool("push_code", "Push git objects and ref updates to a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
+  objects: z.array(z.object({
+    hash: z.string().describe("Git object hash"),
+    type: z.enum(["blob", "tree", "commit", "tag"]).describe("Git object type"),
+    content: z.string().describe("Base64-encoded object content"),
+  })).optional().describe("Git objects to store"),
   ref_updates: z.array(z.object({
-    name: z.string(),
-    old_hash: z.string(),
-    new_hash: z.string(),
+    name: z.string().describe("Ref name (e.g. refs/heads/main)"),
+    old_hash: z.string().optional().describe("Previous ref hash"),
+    new_hash: z.string().describe("New ref hash"),
   })).describe("Reference updates"),
-}, async ({ repo, ref_updates }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/push`, { ref_updates }));
+}, async ({ repo, objects, ref_updates }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/push`, {
+    objects: objects ?? [],
+    ref_updates,
+  }));
 });
 
 server.tool("clone_repo", "Clone/pull a repository (optionally specify branch)", {
@@ -139,16 +158,16 @@ server.tool("list_issues", "List issues in a repository", {
 
 server.tool("close_issue", "Close an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  issue_number: z.number().int().positive().describe("Issue number to close"),
-}, async ({ repo, issue_number }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/close`));
+  issue_id: z.string().min(1).describe("Issue ID (e.g. issue-1734567890123456789)"),
+}, async ({ repo, issue_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/close`));
 });
 
 server.tool("get_issue", "Get details of a specific issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  issue_number: z.number().int().positive().describe("Issue number"),
-}, async ({ repo, issue_number }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}`));
+  issue_id: z.string().min(1).describe("Issue ID"),
+}, async ({ repo, issue_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}`));
 });
 
 // Pull Request tools
@@ -177,18 +196,18 @@ server.tool("list_prs", "List pull requests in a repository", {
 
 server.tool("get_pr", "Get details of a specific pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  pr_number: z.number().int().positive().describe("PR number"),
-}, async ({ repo, pr_number }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}`));
+  pr_id: z.string().min(1).describe("Pull request ID"),
+}, async ({ repo, pr_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}`));
 });
 
 server.tool("review_pr", "Review a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  pr_number: z.number().int().positive().describe("PR number"),
+  pr_id: z.string().min(1).describe("Pull request ID"),
   verdict: z.enum(["approve", "request_changes", "comment"]).describe("Review verdict"),
   body: z.string().optional().describe("Review comment"),
-}, async ({ repo, pr_number, verdict, body }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}/review`, {
+}, async ({ repo, pr_id, verdict, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}/review`, {
     verdict,
     body: body || "",
   }));
@@ -196,10 +215,10 @@ server.tool("review_pr", "Review a pull request", {
 
 server.tool("merge_pr", "Merge a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  pr_number: z.number().int().positive().describe("PR number"),
+  pr_id: z.string().min(1).describe("Pull request ID"),
   merge_method: z.enum(["merge", "squash", "rebase"]).optional().describe("Merge strategy"),
-}, async ({ repo, pr_number, merge_method }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}/merge`, {
+}, async ({ repo, pr_id, merge_method }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}/merge`, {
     merge_method: merge_method || "merge",
   }));
 });
@@ -471,54 +490,24 @@ server.tool("get_activity", "Get unified activity feed across all repos", {
 // Comment tools
 server.tool("add_issue_comment", "Add a comment to an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  issue_number: z.number().int().positive().describe("Issue number"),
+  issue_id: z.string().min(1).describe("Issue ID"),
   body: z.string().min(1).max(65536).describe("Comment body"),
-}, async ({ repo, issue_number, body }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comment`, { body }));
+}, async ({ repo, issue_id, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/comment`, { body }));
 });
 
 server.tool("list_issue_comments", "List comments on an issue", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  issue_number: z.number().int().positive().describe("Issue number"),
-}, async ({ repo, issue_number }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comments`));
-});
-
-server.tool("add_issue_comment", "Add a comment to an issue", {
-  repo: z.string().min(1).max(64).describe("Repository name"),
-  issue_number: z.number().int().positive().describe("Issue number"),
-  body: z.string().min(1).describe("Comment body"),
-}, async ({ repo, issue_number, body }) => {
-  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${issue_number}/comment`, { body }));
+  issue_id: z.string().min(1).describe("Issue ID"),
+}, async ({ repo, issue_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues/${encodeURIComponent(issue_id)}/comments`));
 });
 
 server.tool("list_pr_comments", "List comments on a pull request", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-  pr_number: z.number().int().positive().describe("PR number"),
-}, async ({ repo, pr_number }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${pr_number}/comments`));
-});
-
-// Star count tool
-server.tool("get_star_count", "Get the number of stars for a repository", {
-  repo: z.string().min(1).max(64).describe("Repository name"),
-}, async ({ repo }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stars`));
-});
-
-// Commit parents tool
-server.tool("get_commit_parents", "Get parent commits of a commit", {
-  repo: z.string().min(1).max(64).describe("Repository name"),
-  commit_hash: z.string().describe("Commit hash"),
-}, async ({ repo, commit_hash }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/commits/${encodeURIComponent(commit_hash)}/parents`));
-});
-
-// UCAN verification tool
-server.tool("verify_ucan", "Verify a UCAN token", {
-  token: z.string().describe("UCAN token to verify"),
-}, async ({ token }) => {
-  return daemonCall(() => daemon.post("/api/v1/agents/verify", { token }));
+  pr_id: z.string().min(1).describe("Pull request ID"),
+}, async ({ repo, pr_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}/comments`));
 });
 
 // Start the server

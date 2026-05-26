@@ -2,7 +2,17 @@
   "name": "gitant-mcp",
   "version": "0.1.0",
   "description": "MCP server for gitant - decentralized GitHub for solo developers",
+  "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "gitant-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",

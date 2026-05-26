@@ -1,6 +1,6 @@
 # gitant-mcp
 
-MCP (Model Context Protocol) server for gitant. Gives AI agents structured access to a gitant node.
+MCP (Model Context Protocol) server for [gitant](https://github.com/GrayCodeAI/gitant). Gives AI agents structured access to a gitant node via the daemon REST API.
 
 ## Quick Start
 
@@ -9,16 +9,44 @@ npm install
 npm run build
 ```
 
-## Usage
+Or after npm publish:
 
-Add to your MCP client configuration:
+```bash
+npx gitant-mcp
+```
+
+## Environment
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GITANT_DAEMON_URL` | `http://localhost:7777` | Daemon base URL |
+| `GITANT_UCAN_TOKEN` | — | Bearer UCAN token (**required for write operations**) |
+
+## MCP client config
+
+```json
+{
+  "mcpServers": {
+    "gitant": {
+      "command": "npx",
+      "args": ["gitant-mcp"],
+      "env": {
+        "GITANT_DAEMON_URL": "http://localhost:7777",
+        "GITANT_UCAN_TOKEN": "your-delegated-ucan-token"
+      }
+    }
+  }
+}
+```
+
+Local dev without publish:
 
 ```json
 {
   "mcpServers": {
     "gitant": {
       "command": "node",
-      "args": ["dist/index.js"],
+      "args": ["/path/to/gitant-mcp/dist/index.js"],
       "env": {
         "GITANT_DAEMON_URL": "http://localhost:7777"
       }
@@ -27,47 +55,43 @@ Add to your MCP client configuration:
 }
 ```
 
-## Tools (24)
+## Tools (59)
 
-### Repos
-- `list_repos` — List repositories
-- `get_repo` — Get repo metadata
-- `create_repo` — Create repository
-- `delete_repo` — Delete repository
-- `push_code` — Push ref updates
-- `pull_code` — Pull latest changes
-- `clone_repo` — Clone repository
+### System
+- `get_daemon_status` — Health + node status
+- `list_repos`, `get_repo`, `create_repo`, `delete_repo`, `fork_repository`
+- `push_code` — Push git objects + ref updates
+- `clone_repo`
 
-### Files
-- `get_file` — Get file contents
-- `list_files` — List directory contents
-- `search_code` — Search code
+### Files & search
+- `get_file`, `list_files`, `search_code`
 
-### Issues
-- `create_issue` — Create issue
-- `list_issues` — List issues (with status/label filters)
-- `get_issue` — Get issue details
-- `close_issue` — Close issue
+### Issues & PRs
+- `create_issue`, `list_issues`, `get_issue`, `close_issue`
+- `add_issue_comment`, `list_issue_comments`
+- `open_pr`, `list_prs`, `get_pr`, `review_pr`, `merge_pr`
+- `list_pr_comments`
 
-### Pull Requests
-- `open_pr` — Open PR
-- `list_prs` — List PRs (with status filter)
-- `get_pr` — Get PR details
-- `review_pr` — Review PR
-- `merge_pr` — Merge PR (with method selection)
+Use **string IDs** for issues/PRs (e.g. `issue-1734567890123456789`, `pr-1734567890123456789`).
 
-### Refs & Commits
-- `list_refs` — List refs
-- `create_branch` — Create branch
-- `get_commit_log` — Commit history
-- `diff_commits` — Compare commits
+### Git refs & commits
+- `list_refs`, `create_branch`, `get_commit_log`, `diff_commits`, `get_commit_parents`
 
-### Agents
-- `delegate_capability` — Delegate UCAN capability
-- `revoke_capability` — Revoke capability (not yet implemented)
-- `get_agent_profile` — Get agent profile
-- `get_trust_score` — Get trust score
+### Agents & UCAN
+- `generate_did`, `resolve_did`, `list_agents`, `get_agent`, `get_agent_profile`
+- `delegate_capability`, `verify_ucan`, `revoke_ucan`, `list_revocations`
 
-## License
+### Webhooks, tasks, releases, labels, stars, protection, activity
+- Full CRUD/list tools for each domain (see `src/index.ts`)
 
-MIT
+## Publish
+
+Tag a release to trigger npm publish:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+Requires `NPM_TOKEN` secret in GitHub Actions.
+
+See [PLAN.md](../PLAN.md) in the monorepo root for the full product roadmap.
