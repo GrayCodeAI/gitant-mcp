@@ -1051,6 +1051,90 @@ server.tool("gitant_stop_timer", "Stop the current timer", {
   return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/time/stop`));
 });
 
+// Identity tools
+server.tool("gitant_identity_new", "Generate a new Ed25519 keypair and DID", {}, async () => {
+  return daemonCall(() => daemon.post("/api/v1/identity/generate"));
+});
+
+server.tool("gitant_identity_show", "Show current DID and identity info", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/identity"));
+});
+
+server.tool("gitant_identity_export", "Export DID document as JSON", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/identity/export"));
+});
+
+server.tool("gitant_identity_sign", "Sign a message with Ed25519 private key", {
+  message: z.string().describe("Message to sign"),
+}, async ({ message }) => {
+  return daemonCall(() => daemon.post("/api/v1/identity/sign", { message }));
+});
+
+// Node tools
+server.tool("gitant_node_status", "Show node status and connectivity", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/status"));
+});
+
+server.tool("gitant_node_trust", "Show trust score for an agent", {
+  did: z.string().describe("Agent DID"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}/trust`));
+});
+
+server.tool("gitant_node_resolve", "Resolve a DID to its document via the DHT", {
+  did: z.string().describe("DID to resolve"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.get(`/api/v1/agents/resolve/${encodeURIComponent(did)}`));
+});
+
+// Peer tools
+server.tool("gitant_peer_list", "List known peers", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/network/peers"));
+});
+
+server.tool("gitant_peer_add", "Add a peer by multiaddr", {
+  multiaddr: z.string().describe("Peer multiaddr"),
+}, async ({ multiaddr }) => {
+  return daemonCall(() => daemon.post("/api/v1/network/peers", { multiaddr }));
+});
+
+// Bounty tools (extended)
+server.tool("gitant_approve_bounty", "Approve bounty submission and release payment", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  bounty_id: z.string().describe("Bounty ID"),
+}, async ({ repo, bounty_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/bounties/${encodeURIComponent(bounty_id)}/approve`));
+});
+
+server.tool("gitant_cancel_bounty", "Cancel bounty and refund escrow", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  bounty_id: z.string().describe("Bounty ID"),
+}, async ({ repo, bounty_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/bounties/${encodeURIComponent(bounty_id)}/cancel`));
+});
+
+server.tool("gitant_bounty_stats", "Show bounty statistics for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/bounties/stats`));
+});
+
+// Task tools (extended)
+server.tool("gitant_fail_task", "Mark a task as failed", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  task_id: z.string().describe("Task ID"),
+}, async ({ repo, task_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tasks/${encodeURIComponent(task_id)}/fail`));
+});
+
+// Cert tools (extended)
+server.tool("gitant_verify_cert", "Verify a ref-update certificate's signature", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  cert_id: z.string().describe("Certificate ID"),
+}, async ({ repo, cert_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/certs/${encodeURIComponent(cert_id)}/verify`));
+});
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
