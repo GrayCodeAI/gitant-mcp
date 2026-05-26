@@ -559,6 +559,498 @@ server.tool("gitant_list_pr_comments", "List comments on a pull request", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs/${encodeURIComponent(pr_id)}/comments`));
 });
 
+// Deployment tools
+server.tool("gitant_list_deployments", "List deployments for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  environment: z.string().optional().describe("Filter by environment"),
+  ...paginationSchema,
+}, async ({ repo, environment, offset, limit }) => {
+  let url = `/api/v1/repos/${encodeURIComponent(repo)}/deployments${paginationQuery(offset, limit)}`;
+  if (environment) url += `&environment=${encodeURIComponent(environment)}`;
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_create_deployment", "Create a deployment", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  environment: z.string().describe("Environment name"),
+  ref: z.string().describe("Git ref (branch/tag/SHA)"),
+}, async ({ repo, environment, ref }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/deployments`, { environment, ref }));
+});
+
+server.tool("gitant_get_deployment", "Get deployment status", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  deployment_id: z.string().describe("Deployment ID"),
+}, async ({ repo, deployment_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/deployments/${encodeURIComponent(deployment_id)}`));
+});
+
+server.tool("gitant_rollback_deployment", "Rollback a deployment", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  deployment_id: z.string().describe("Deployment ID"),
+}, async ({ repo, deployment_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/deployments/${encodeURIComponent(deployment_id)}/rollback`));
+});
+
+// Environment tools
+server.tool("gitant_list_environments", "List environments for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/environments${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_environment", "Create an environment", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Environment name"),
+}, async ({ repo, name }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/environments`, { name }));
+});
+
+server.tool("gitant_delete_environment", "Delete an environment", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Environment name"),
+}, async ({ repo, name }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/environments/${encodeURIComponent(name)}`));
+});
+
+// CI/CD Runner tools
+server.tool("gitant_list_runners", "List CI/CD runners", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/runners${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_register_runner", "Register a CI/CD runner", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Runner name"),
+  tags: z.array(z.string()).optional().describe("Runner tags"),
+}, async ({ repo, name, tags }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/runners`, { name, tags: tags || [] }));
+});
+
+server.tool("gitant_delete_runner", "Delete a CI/CD runner", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  runner_id: z.string().describe("Runner ID"),
+}, async ({ repo, runner_id }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/runners/${encodeURIComponent(runner_id)}`));
+});
+
+// CI/CD Variable tools
+server.tool("gitant_list_variables", "List CI/CD variables", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/variables`));
+});
+
+server.tool("gitant_set_variable", "Set a CI/CD variable", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  key: z.string().describe("Variable key"),
+  value: z.string().describe("Variable value"),
+  protected: z.boolean().optional().describe("Whether variable is protected"),
+}, async ({ repo, key, value, protected: isProtected }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/variables`, { key, value, protected: isProtected || false }));
+});
+
+server.tool("gitant_delete_variable", "Delete a CI/CD variable", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  key: z.string().describe("Variable key"),
+}, async ({ repo, key }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/variables/${encodeURIComponent(key)}`));
+});
+
+// CI/CD Pipeline tools
+server.tool("gitant_list_pipelines", "List CI/CD pipelines", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  status: z.enum(["pending", "running", "success", "failed", "cancelled"]).optional().describe("Filter by status"),
+  ...paginationSchema,
+}, async ({ repo, status, offset, limit }) => {
+  let url = `/api/v1/repos/${encodeURIComponent(repo)}/pipelines${paginationQuery(offset, limit)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_get_pipeline", "Get pipeline details", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  pipeline_id: z.string().describe("Pipeline ID"),
+}, async ({ repo, pipeline_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/pipelines/${encodeURIComponent(pipeline_id)}`));
+});
+
+server.tool("gitant_trigger_pipeline", "Trigger a CI/CD pipeline", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ref: z.string().describe("Git ref to run pipeline on"),
+}, async ({ repo, ref }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/pipelines`, { ref }));
+});
+
+// Notification tools
+server.tool("gitant_list_notifications", "List notifications", {
+  unread: z.boolean().optional().describe("Only unread notifications"),
+  ...paginationSchema,
+}, async ({ unread, offset, limit }) => {
+  let url = `/api/v1/notifications${paginationQuery(offset, limit)}`;
+  if (unread) url += "&unread=true";
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_mark_notification_read", "Mark a notification as read", {
+  notification_id: z.string().describe("Notification ID"),
+}, async ({ notification_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/notifications/${encodeURIComponent(notification_id)}/read`));
+});
+
+server.tool("gitant_mark_all_notifications_read", "Mark all notifications as read", {}, async () => {
+  return daemonCall(() => daemon.post("/api/v1/notifications/read-all"));
+});
+
+// Snippet tools
+server.tool("gitant_list_snippets", "List code snippets", {
+  ...paginationSchema,
+}, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/snippets${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_snippet", "Create a code snippet", {
+  title: z.string().describe("Snippet title"),
+  content: z.string().describe("Snippet content"),
+  language: z.string().optional().describe("Programming language"),
+  public: z.boolean().optional().describe("Whether snippet is public"),
+}, async ({ title, content, language, public: isPublic }) => {
+  return daemonCall(() => daemon.post("/api/v1/snippets", { title, content, language, public: isPublic || false }));
+});
+
+server.tool("gitant_get_snippet", "Get a code snippet", {
+  snippet_id: z.string().describe("Snippet ID"),
+}, async ({ snippet_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/snippets/${encodeURIComponent(snippet_id)}`));
+});
+
+server.tool("gitant_delete_snippet", "Delete a code snippet", {
+  snippet_id: z.string().describe("Snippet ID"),
+}, async ({ snippet_id }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/snippets/${encodeURIComponent(snippet_id)}`));
+});
+
+// Milestone tools
+server.tool("gitant_list_milestones", "List milestones for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  state: z.enum(["open", "closed", "all"]).optional().describe("Filter by state"),
+  ...paginationSchema,
+}, async ({ repo, state, offset, limit }) => {
+  let url = `/api/v1/repos/${encodeURIComponent(repo)}/milestones${paginationQuery(offset, limit)}`;
+  if (state) url += `&state=${encodeURIComponent(state)}`;
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_create_milestone", "Create a milestone", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  title: z.string().describe("Milestone title"),
+  description: z.string().optional().describe("Milestone description"),
+  due_date: z.string().optional().describe("Due date (ISO 8601)"),
+}, async ({ repo, title, description, due_date }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/milestones`, { title, description, due_date }));
+});
+
+server.tool("gitant_get_milestone", "Get a milestone", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  milestone_id: z.string().describe("Milestone ID"),
+}, async ({ repo, milestone_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/milestones/${encodeURIComponent(milestone_id)}`));
+});
+
+// Epic tools
+server.tool("gitant_list_epics", "List epics for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/epics${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_epic", "Create an epic", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  title: z.string().describe("Epic title"),
+  description: z.string().optional().describe("Epic description"),
+}, async ({ repo, title, description }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/epics`, { title, description }));
+});
+
+server.tool("gitant_get_epic", "Get an epic", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  epic_id: z.string().describe("Epic ID"),
+}, async ({ repo, epic_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/epics/${encodeURIComponent(epic_id)}`));
+});
+
+// Kanban tools
+server.tool("gitant_list_kanban_boards", "List kanban boards", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/kanban`));
+});
+
+server.tool("gitant_get_kanban_board", "Get a kanban board", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  board_id: z.string().describe("Board ID"),
+}, async ({ repo, board_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/kanban/${encodeURIComponent(board_id)}`));
+});
+
+// Bounty tools
+server.tool("gitant_list_bounties", "List bounties for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  status: z.enum(["open", "claimed", "paid"]).optional().describe("Filter by status"),
+  ...paginationSchema,
+}, async ({ repo, status, offset, limit }) => {
+  let url = `/api/v1/repos/${encodeURIComponent(repo)}/bounties${paginationQuery(offset, limit)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_create_bounty", "Create a bounty", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_id: z.string().describe("Issue ID"),
+  amount: z.number().describe("Bounty amount"),
+  token: z.string().optional().describe("Token symbol"),
+}, async ({ repo, issue_id, amount, token }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/bounties`, { issue_id, amount, token }));
+});
+
+server.tool("gitant_claim_bounty", "Claim a bounty", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  bounty_id: z.string().describe("Bounty ID"),
+}, async ({ repo, bounty_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/bounties/${encodeURIComponent(bounty_id)}/claim`));
+});
+
+// Todo tools
+server.tool("gitant_list_todos", "List todo items", {
+  status: z.enum(["open", "done", "all"]).optional().describe("Filter by status"),
+  ...paginationSchema,
+}, async ({ status, offset, limit }) => {
+  let url = `/api/v1/todos${paginationQuery(offset, limit)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  return daemonCall(() => daemon.get(url));
+});
+
+server.tool("gitant_create_todo", "Create a todo item", {
+  title: z.string().describe("Todo title"),
+  body: z.string().optional().describe("Todo description"),
+}, async ({ title, body }) => {
+  return daemonCall(() => daemon.post("/api/v1/todos", { title, body }));
+});
+
+server.tool("gitant_complete_todo", "Mark a todo as complete", {
+  todo_id: z.string().describe("Todo ID"),
+}, async ({ todo_id }) => {
+  return daemonCall(() => daemon.post(`/api/v1/todos/${encodeURIComponent(todo_id)}/complete`));
+});
+
+// Changelog tool
+server.tool("gitant_get_changelog", "Get unified activity changelog for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  limit: z.number().int().positive().max(100).optional().describe("Max events"),
+}, async ({ repo, limit }) => {
+  const query = limit ? `?limit=${limit}` : "";
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/changelog${query}`));
+});
+
+// Cert tools
+server.tool("gitant_list_certs", "List signed ref-update certificates", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/certs`));
+});
+
+server.tool("gitant_get_cert", "Get a specific certificate", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  cert_id: z.string().describe("Certificate ID"),
+}, async ({ repo, cert_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/certs/${encodeURIComponent(cert_id)}`));
+});
+
+// IPFS tools
+server.tool("gitant_list_ipfs_pins", "List all CIDs pinned to the node", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/ipfs/pins"));
+});
+
+server.tool("gitant_get_ipfs_object", "Retrieve a git object by CIDv1", {
+  cid: z.string().describe("CIDv1 hash"),
+}, async ({ cid }) => {
+  return daemonCall(() => daemon.get(`/api/v1/ipfs/${encodeURIComponent(cid)}`));
+});
+
+// Sync tools
+server.tool("gitant_trigger_sync", "Trigger sync from all known peers", {}, async () => {
+  return daemonCall(() => daemon.post("/api/v1/sync/trigger"));
+});
+
+server.tool("gitant_get_sync_status", "Get sync queue status", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/sync/status"));
+});
+
+// Name tools
+server.tool("gitant_register_name", "Register a name on Base L2", {
+  name: z.string().describe("Name to register"),
+}, async ({ name }) => {
+  return daemonCall(() => daemon.post("/api/v1/names/register", { name }));
+});
+
+server.tool("gitant_resolve_name", "Resolve a name to owner address and DID", {
+  name: z.string().describe("Name to resolve"),
+}, async ({ name }) => {
+  return daemonCall(() => daemon.get(`/api/v1/names/${encodeURIComponent(name)}/resolve`));
+});
+
+server.tool("gitant_lookup_name", "Reverse lookup DID to registered name", {
+  did: z.string().describe("DID to lookup"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.get(`/api/v1/names/lookup?did=${encodeURIComponent(did)}`));
+});
+
+// Whoami tool
+server.tool("gitant_whoami", "Get current identity (DID) and node info", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/identity"));
+});
+
+// Mirror tools
+server.tool("gitant_mirror_repo", "Mirror a repo from GitHub/GitLab", {
+  source_url: z.string().url().describe("Source repository URL"),
+  name: z.string().optional().describe("Local repo name"),
+}, async ({ source_url, name }) => {
+  return daemonCall(() => daemon.post("/api/v1/mirrors", { source_url, name }));
+});
+
+server.tool("gitant_list_mirrors", "List mirrored repositories", {
+  ...paginationSchema,
+}, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/mirrors${paginationQuery(offset, limit)}`));
+});
+
+// Seed node tools
+server.tool("gitant_list_seeds", "List seed nodes", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/network/seeds"));
+});
+
+server.tool("gitant_add_seed", "Add a seed node", {
+  multiaddr: z.string().describe("Multiaddr of the seed node"),
+}, async ({ multiaddr }) => {
+  return daemonCall(() => daemon.post("/api/v1/network/seeds", { multiaddr }));
+});
+
+server.tool("gitant_remove_seed", "Remove a seed node", {
+  multiaddr: z.string().describe("Multiaddr of the seed node"),
+}, async ({ multiaddr }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/network/seeds/${encodeURIComponent(multiaddr)}`));
+});
+
+// Workspace tools
+server.tool("gitant_list_workspaces", "List workspaces", {
+  ...paginationSchema,
+}, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/workspaces${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_workspace", "Create a workspace", {
+  name: z.string().describe("Workspace name"),
+  description: z.string().optional().describe("Workspace description"),
+}, async ({ name, description }) => {
+  return daemonCall(() => daemon.post("/api/v1/workspaces", { name, description }));
+});
+
+// Forum tools
+server.tool("gitant_list_forum_threads", "List forum threads", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/forum${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_forum_thread", "Create a forum thread", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  title: z.string().describe("Thread title"),
+  body: z.string().describe("Thread body"),
+}, async ({ repo, title, body }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/forum`, { title, body }));
+});
+
+// Chat tools
+server.tool("gitant_list_chat_messages", "List chat messages", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/chat${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_send_chat_message", "Send a chat message", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  message: z.string().describe("Message content"),
+}, async ({ repo, message }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/chat`, { message }));
+});
+
+// Governance tools
+server.tool("gitant_list_governance_proposals", "List governance proposals", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/governance${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_create_governance_proposal", "Create a governance proposal", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  title: z.string().describe("Proposal title"),
+  description: z.string().describe("Proposal description"),
+  type: z.string().describe("Proposal type"),
+}, async ({ repo, title, description, type: proposalType }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/governance`, { title, description, type: proposalType }));
+});
+
+server.tool("gitant_vote_on_proposal", "Vote on a governance proposal", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  proposal_id: z.string().describe("Proposal ID"),
+  vote: z.enum(["yes", "no", "abstain"]).describe("Vote"),
+}, async ({ repo, proposal_id, vote }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/governance/${encodeURIComponent(proposal_id)}/vote`, { vote }));
+});
+
+// Stacked diff tools
+server.tool("gitant_list_stacks", "List stacked diffs", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stacks`));
+});
+
+server.tool("gitant_get_stack", "Get a stacked diff", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  stack_id: z.string().describe("Stack ID"),
+}, async ({ repo, stack_id }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/stacks/${encodeURIComponent(stack_id)}`));
+});
+
+// Time tracking tools
+server.tool("gitant_list_time_entries", "List time tracking entries", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/time${paginationQuery(offset, limit)}`));
+});
+
+server.tool("gitant_start_timer", "Start a time tracking timer", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  issue_id: z.string().optional().describe("Issue ID to track time against"),
+  description: z.string().optional().describe("Time entry description"),
+}, async ({ repo, issue_id, description }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/time/start`, { issue_id, description }));
+});
+
+server.tool("gitant_stop_timer", "Stop the current timer", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/time/stop`));
+});
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
