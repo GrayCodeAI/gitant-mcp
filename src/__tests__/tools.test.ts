@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildListQuery } from "../query.js";
 
-// Mock the daemon client module
 vi.mock("../daemon-client.js", () => {
   const mockDaemon = {
     get: vi.fn(),
@@ -13,92 +13,64 @@ vi.mock("../daemon-client.js", () => {
 });
 
 import { daemon } from "../daemon-client.js";
+
 const mockDaemon = vi.mocked(daemon);
 
-// okResult unused - kept for future tests
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function okResult(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-}
-
-// Import the server to register tools — then we test via the daemon mock
-// Since MCP tools are registered on the server object, we verify through the daemon mock calls
-
-describe("MCP Tools — daemon integration", () => {
+describe("MCP list tool query integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // The tools are registered as server.tool() calls in index.ts.
-  // We verify the daemon client is called correctly by testing the
-  // individual tool handler logic patterns.
-
-  describe("daemonCall wrapper", () => {
-    it("wraps successful daemon calls in text content", async () => {
-      mockDaemon.get.mockResolvedValueOnce({ repos: [] });
-      const result = await daemon.get("/api/v1/repos");
-      expect(result).toEqual({ repos: [] });
+  it("list_issues forwards status, labels, and pagination to the daemon", async () => {
+    mockDaemon.get.mockResolvedValueOnce({ issues: [], total: 0 });
+    const repo = "demo";
+    const query = buildListQuery({
+      status: "open",
+      labels: ["bug", "critical"],
+      offset: 0,
+      limit: 50,
     });
 
-    it("propagates errors from daemon calls", async () => {
-      mockDaemon.get.mockRejectedValueOnce(new Error("connection refused"));
-      await expect(daemon.get("/api/v1/repos")).rejects.toThrow("connection refused");
-    });
+    await daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues${query}`);
+
+    expect(mockDaemon.get).toHaveBeenCalledWith(
+      "/api/v1/repos/demo/issues?status=open&labels=bug%2Ccritical&offset=0&limit=50",
+    );
   });
 
-  describe("URL construction patterns", () => {
-    it("constructs repo-scoped URLs correctly", async () => {
-      mockDaemon.get.mockResolvedValueOnce({ issues: [] });
-      await daemon.get("/api/v1/repos/my-repo/issues");
-      expect(mockDaemon.get).toHaveBeenCalledWith("/api/v1/repos/my-repo/issues");
-    });
+  it("list_prs forwards merged status filter", async () => {
+    mockDaemon.get.mockResolvedValueOnce({ prs: [], total: 0 });
+    const query = buildListQuery({ status: "merged", limit: 10 });
 
-    it("constructs nested resource URLs correctly", async () => {
-      mockDaemon.get.mockResolvedValueOnce({ id: "issue-1" });
-      await daemon.get("/api/v1/repos/my-repo/issues/issue-1");
-      expect(mockDaemon.get).toHaveBeenCalledWith(
-        "/api/v1/repos/my-repo/issues/issue-1",
-      );
-    });
+    await daemon.get(`/api/v1/repos/demo/prs${query}`);
 
-    it("handles special characters in repo names", async () => {
-      mockDaemon.get.mockResolvedValueOnce({});
-      const encoded = encodeURIComponent("my repo/name");
-      await daemon.get(`/api/v1/repos/${encoded}`);
-      expect(mockDaemon.get).toHaveBeenCalledWith(
-        `/api/v1/repos/${encoded}`,
-      );
-    });
+    expect(mockDaemon.get).toHaveBeenCalledWith("/api/v1/repos/demo/prs?status=merged&limit=10");
   });
 
-  describe("POST/PUT/DELETE patterns", () => {
-    it("sends POST with body for create operations", async () => {
-      mockDaemon.post.mockResolvedValueOnce({ id: "new-repo" });
-      await daemon.post("/api/v1/repos", {
-        name: "test",
-        description: "desc",
-        private: false,
-      });
-      expect(mockDaemon.post).toHaveBeenCalledWith("/api/v1/repos", {
-        name: "test",
-        description: "desc",
-        private: false,
-      });
-    });
+  it("list_tasks forwards status filter supported by daemon", async () => {
+    mockDaemon.get.mockResolvedValueOnce({ tasks: [], total: 0 });
+    const query = buildListQuery({ status: "claimed" });
 
-    it("sends PUT for update operations", async () => {
-      mockDaemon.put.mockResolvedValueOnce({ ok: true });
-      await daemon.put("/api/v1/repos/test/issues/i1", { status: "closed" });
-      expect(mockDaemon.put).toHaveBeenCalledWith(
-        "/api/v1/repos/test/issues/i1",
-        { status: "closed" },
-      );
-    });
+    await daemon.get(`/api/v1/repos/demo/tasks${query}`);
 
-    it("sends DELETE for delete operations", async () => {
-      mockDaemon.delete.mockResolvedValueOnce({ ok: true });
-      await daemon.delete("/api/v1/repos/test");
-      expect(mockDaemon.delete).toHaveBeenCalledWith("/api/v1/repos/test");
-    });
+    expect(mockDaemon.get).toHaveBeenCalledWith("/api/v1/repos/demo/tasks?status=claimed");
+  });
+});
+
+describe("MCP daemon client patterns", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("propagates errors from daemon calls", async () => {
+    mockDaemon.get.mockRejectedValueOnce(new Error("connection refused"));
+    await expect(daemon.get("/api/v1/repos")).rejects.toThrow("connection refused");
+  });
+
+  it("encodes repo names with special characters", async () => {
+    mockDaemon.get.mockResolvedValueOnce({});
+    const encoded = encodeURIComponent("my repo/name");
+    await daemon.get(`/api/v1/repos/${encoded}`);
+    expect(mockDaemon.get).toHaveBeenCalledWith(`/api/v1/repos/${encoded}`);
   });
 });

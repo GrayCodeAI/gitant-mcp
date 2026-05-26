@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { daemon } from "./daemon-client.js";
+import { buildListQuery } from "./query.js";
 
 const server = new McpServer({
   name: "gitant",
@@ -26,11 +27,7 @@ async function daemonCall<T>(fn: () => Promise<T>) {
 }
 
 function paginationQuery(offset?: number, limit?: number): string {
-  const params = new URLSearchParams();
-  if (offset !== undefined) params.set("offset", offset.toString());
-  if (limit !== undefined) params.set("limit", limit.toString());
-  const query = params.toString();
-  return query ? `?${query}` : "";
+  return buildListQuery({ offset, limit });
 }
 
 const paginationSchema = {
@@ -189,12 +186,7 @@ server.tool("list_issues", "List issues in a repository", {
   labels: z.array(z.string()).optional().describe("Filter by labels"),
   ...paginationSchema,
 }, async ({ repo, status, labels, offset, limit }) => {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  if (labels) params.set("labels", labels.join(","));
-  if (offset !== undefined) params.set("offset", offset.toString());
-  if (limit !== undefined) params.set("limit", limit.toString());
-  const query = params.toString() ? `?${params.toString()}` : "";
+  const query = buildListQuery({ status, labels, offset, limit });
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues${query}`));
 });
 
@@ -233,11 +225,7 @@ server.tool("list_prs", "List pull requests in a repository", {
   status: z.enum(["open", "closed", "merged", "all"]).optional().describe("Filter by status"),
   ...paginationSchema,
 }, async ({ repo, status, offset, limit }) => {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  if (offset !== undefined) params.set("offset", offset.toString());
-  if (limit !== undefined) params.set("limit", limit.toString());
-  const query = params.toString() ? `?${params.toString()}` : "";
+  const query = buildListQuery({ status, offset, limit });
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs${query}`));
 });
 
@@ -394,11 +382,7 @@ server.tool("list_tasks", "List tasks for a repository", {
   status: z.enum(["open", "claimed", "completed"]).optional().describe("Filter by status"),
   ...paginationSchema,
 }, async ({ repo, status, offset, limit }) => {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  if (offset !== undefined) params.set("offset", offset.toString());
-  if (limit !== undefined) params.set("limit", limit.toString());
-  const query = params.toString() ? `?${params.toString()}` : "";
+  const query = buildListQuery({ status, offset, limit });
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/tasks${query}`));
 });
 
