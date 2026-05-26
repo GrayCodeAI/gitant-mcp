@@ -25,9 +25,22 @@ async function daemonCall<T>(fn: () => Promise<T>) {
   }
 }
 
+function paginationQuery(offset?: number, limit?: number): string {
+  const params = new URLSearchParams();
+  if (offset !== undefined) params.set("offset", offset.toString());
+  if (limit !== undefined) params.set("limit", limit.toString());
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+const paginationSchema = {
+  offset: z.number().int().nonnegative().optional().describe("Pagination offset"),
+  limit: z.number().int().positive().max(100).optional().describe("Page size (max 100)"),
+};
+
 // Repository tools
-server.tool("list_repos", "List repositories on this node", {}, async () => {
-  return daemonCall(() => daemon.get("/api/v1/repos"));
+server.tool("list_repos", "List repositories on this node", paginationSchema, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos${paginationQuery(offset, limit)}`));
 });
 
 server.tool("get_daemon_status", "Get daemon health and node status", {}, async () => {
@@ -90,6 +103,21 @@ server.tool("push_code", "Push git objects and ref updates to a repository", {
   }));
 });
 
+server.tool("push_packfile", "Push a base64-encoded git packfile and ref updates", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  packfile: z.string().describe("Base64-encoded git packfile"),
+  ref_updates: z.array(z.object({
+    name: z.string().describe("Ref name (e.g. refs/heads/main)"),
+    old_hash: z.string().optional().describe("Previous ref hash"),
+    new_hash: z.string().describe("New ref hash"),
+  })).describe("Reference updates"),
+}, async ({ repo, packfile, ref_updates }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/push-packfile`, {
+    packfile,
+    ref_updates,
+  }));
+});
+
 server.tool("clone_repo", "Clone/pull a repository (optionally specify branch)", {
   repo: z.string().min(1).max(64).describe("Repository name or URL"),
   branch: z.string().optional().describe("Branch to pull"),
@@ -148,10 +176,13 @@ server.tool("list_issues", "List issues in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "all"]).optional().describe("Filter by status"),
   labels: z.array(z.string()).optional().describe("Filter by labels"),
-}, async ({ repo, status, labels }) => {
+  ...paginationSchema,
+}, async ({ repo, status, labels, offset, limit }) => {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   if (labels) params.set("labels", labels.join(","));
+  if (offset !== undefined) params.set("offset", offset.toString());
+  if (limit !== undefined) params.set("limit", limit.toString());
   const query = params.toString() ? `?${params.toString()}` : "";
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/issues${query}`));
 });
@@ -189,8 +220,13 @@ server.tool("open_pr", "Open a new pull request", {
 server.tool("list_prs", "List pull requests in a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "closed", "merged", "all"]).optional().describe("Filter by status"),
-}, async ({ repo, status }) => {
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  ...paginationSchema,
+}, async ({ repo, status, offset, limit }) => {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (offset !== undefined) params.set("offset", offset.toString());
+  if (limit !== undefined) params.set("limit", limit.toString());
+  const query = params.toString() ? `?${params.toString()}` : "";
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/prs${query}`));
 });
 
@@ -302,8 +338,8 @@ server.tool("get_agent_profile", "Get an agent's profile, capabilities, and trus
 });
 
 // Webhook tools
-server.tool("list_webhooks", "List registered webhooks", {}, async () => {
-  return daemonCall(() => daemon.get("/api/v1/webhooks"));
+server.tool("list_webhooks", "List registered webhooks", paginationSchema, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/webhooks${paginationQuery(offset, limit)}`));
 });
 
 server.tool("register_webhook", "Register a new webhook", {
@@ -321,8 +357,8 @@ server.tool("delete_webhook", "Delete a webhook", {
 });
 
 // Agent tools (extended)
-server.tool("list_agents", "List all known agents", {}, async () => {
-  return daemonCall(() => daemon.get("/api/v1/agents"));
+server.tool("list_agents", "List all known agents", paginationSchema, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/agents${paginationQuery(offset, limit)}`));
 });
 
 server.tool("get_agent", "Get details of a specific agent", {
@@ -345,8 +381,13 @@ server.tool("resolve_did", "Resolve a DID to its document", {
 server.tool("list_tasks", "List tasks for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
   status: z.enum(["open", "claimed", "completed"]).optional().describe("Filter by status"),
-}, async ({ repo, status }) => {
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  ...paginationSchema,
+}, async ({ repo, status, offset, limit }) => {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (offset !== undefined) params.set("offset", offset.toString());
+  if (limit !== undefined) params.set("limit", limit.toString());
+  const query = params.toString() ? `?${params.toString()}` : "";
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/tasks${query}`));
 });
 
@@ -376,8 +417,9 @@ server.tool("complete_task", "Complete a task", {
 // Release tools
 server.tool("list_releases", "List releases for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-}, async ({ repo }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases`));
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/releases${paginationQuery(offset, limit)}`));
 });
 
 server.tool("get_release", "Get a specific release", {
@@ -406,8 +448,9 @@ server.tool("delete_release", "Delete a release", {
 // Label tools
 server.tool("list_labels", "List labels for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
-}, async ({ repo }) => {
-  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/labels`));
+  ...paginationSchema,
+}, async ({ repo, offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/labels${paginationQuery(offset, limit)}`));
 });
 
 server.tool("create_label", "Create a label for a repository", {
@@ -481,10 +524,9 @@ server.tool("list_branch_protections", "List all branch protection rules for a r
 
 // Activity tools
 server.tool("get_activity", "Get unified activity feed across all repos", {
-  limit: z.number().int().positive().max(10000).optional().describe("Max number of events to return"),
-}, async ({ limit }) => {
-  const query = limit ? `?limit=${limit}` : "";
-  return daemonCall(() => daemon.get(`/api/v1/activity${query}`));
+  ...paginationSchema,
+}, async ({ offset, limit }) => {
+  return daemonCall(() => daemon.get(`/api/v1/activity${paginationQuery(offset, limit)}`));
 });
 
 // Comment tools
