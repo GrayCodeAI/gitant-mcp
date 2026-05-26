@@ -1,19 +1,23 @@
 # gitant-mcp
 
-MCP (Model Context Protocol) server for [gitant](https://github.com/GrayCodeAI/gitant). Gives AI agents structured access to a gitant node via the daemon REST API.
+MCP (Model Context Protocol) server for [gitant](https://github.com/GrayCodeAI/gitant-daemon). Gives AI agents structured access to a gitant node via the daemon REST API.
 
-## Quick Start
+**Install and run from GitHub** — [releases](https://github.com/GrayCodeAI/gitant-mcp/releases) or clone + build.
 
-```bash
-npm install
-npm run build
-```
+**Full setup guide:** [gitant-daemon docs/QUICKSTART.md](https://github.com/GrayCodeAI/gitant-daemon/blob/main/docs/QUICKSTART.md)
 
-Or after npm publish:
+## Install from GitHub
 
 ```bash
-npx gitant-mcp
+git clone https://github.com/GrayCodeAI/gitant-mcp.git
+cd gitant-mcp
+make build
+make run
 ```
+
+Requires **Node.js 20+**.
+
+Or download a tagged [release tarball](https://github.com/GrayCodeAI/gitant-mcp/releases), extract, and run `node dist/index.js` (pre-built `dist/` is included in release artifacts).
 
 ## Environment
 
@@ -24,22 +28,7 @@ npx gitant-mcp
 
 ## MCP client config
 
-```json
-{
-  "mcpServers": {
-    "gitant": {
-      "command": "npx",
-      "args": ["gitant-mcp"],
-      "env": {
-        "GITANT_DAEMON_URL": "http://localhost:7777",
-        "GITANT_UCAN_TOKEN": "your-delegated-ucan-token"
-      }
-    }
-  }
-}
-```
-
-Local dev without publish:
+Point your MCP client at the built entrypoint (adjust the path):
 
 ```json
 {
@@ -48,7 +37,8 @@ Local dev without publish:
       "command": "node",
       "args": ["/path/to/gitant-mcp/dist/index.js"],
       "env": {
-        "GITANT_DAEMON_URL": "http://localhost:7777"
+        "GITANT_DAEMON_URL": "http://localhost:7777",
+        "GITANT_UCAN_TOKEN": "your-delegated-ucan-token"
       }
     }
   }
@@ -91,14 +81,14 @@ Use **string IDs** for issues/PRs (e.g. `issue-1734567890123456789`, `pr-1734567
 ### Webhooks, tasks, releases, labels, stars, protection, activity
 - Full CRUD/list tools for each domain (see `src/index.ts`)
 
-## Publish
+## Releases
 
-Tag a release to trigger npm publish:
+Push a version tag — GitHub Actions builds and attaches a tarball:
 
 ```bash
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Requires `NPM_TOKEN` secret in GitHub Actions.
+See [Release workflow](.github/workflows/release.yml).
 
-See [PLAN.md](../PLAN.md) in the monorepo root for the full product roadmap.
+See [PLAN.md](https://github.com/GrayCodeAI/gitant-daemon/blob/main/PLAN.md) in `gitant-daemon` for the full product roadmap.

@@ -4,12 +4,39 @@
   "description": "MCP server for gitant - decentralized GitHub for solo developers",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "gitant-mcp": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/daemon-client.js",
+    "dist/daemon-client.d.ts",
+    "dist/query.js",
+    "dist/query.d.ts",
+    "README.md",
+    "LICENSE"
   ],
+  "keywords": [
+    "gitant",
+    "mcp",
+    "model-context-protocol",
+    "git",
+    "decentralized",
+    "ai-agents",
+    "github-alternative"
+  ],
+  "author": "GrayCodeAI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GrayCodeAI/gitant-mcp.git"
+  },
+  "homepage": "https://github.com/GrayCodeAI/gitant-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/GrayCodeAI/gitant-mcp/issues"
+  },
   "engines": {
     "node": ">=20"
   },

@@ -4,8 +4,10 @@ TypeScript client for building agents and automation against a [Gitant](https://
 
 ## Install
 
+From the `sdk/` folder (requires Node.js 20+):
+
 ```bash
-cd sdk && npm install && npm run build
+make build
 ```
 
 ## Usage

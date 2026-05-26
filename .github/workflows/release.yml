@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: make test
+      - run: npm ci --omit=dev
+      - run: npm run build
+
+      - name: Package release tarball
+        run: |
+          mkdir -p release
+          tar czf release/gitant-mcp-${GITHUB_REF_NAME}.tar.gz \
+            dist node_modules package.json README.md LICENSE
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/gitant-mcp-*.tar.gz
+          generate_release_notes: true
