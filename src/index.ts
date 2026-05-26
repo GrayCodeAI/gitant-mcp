@@ -1135,7 +1135,111 @@ server.tool("gitant_verify_cert", "Verify a ref-update certificate's signature",
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/certs/${encodeURIComponent(cert_id)}/verify`));
 });
 
-// Start the server
+// Identity (extended)
+server.tool("gitant_identity_resolve", "Resolve any DID method to its document", {
+  did: z.string().describe("DID to resolve"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.get(`/api/v1/identity/resolve/${encodeURIComponent(did)}`));
+});
+
+server.tool("gitant_identity_register_did", "Anchor DID document on-chain (did:gitlawb)", {}, async () => {
+  return daemonCall(() => daemon.post("/api/v1/identity/register-did"));
+});
+
+// Cert (extended)
+server.tool("gitant_set_cert_threshold", "Set required signature threshold for ref updates", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  threshold: z.number().int().positive().describe("Required signatures"),
+}, async ({ repo, threshold }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/certs/threshold`, { threshold }));
+});
+
+server.tool("gitant_sign_cert", "Sign a ref-update certificate", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  ref: z.string().describe("Ref name"),
+  old_oid: z.string().describe("Previous commit hash"),
+  new_oid: z.string().describe("New commit hash"),
+}, async ({ repo, ref, old_oid, new_oid }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/certs/sign`, { ref, old_oid, new_oid }));
+});
+
+// Secrets tools
+server.tool("gitant_list_secrets", "List secret names (values never shown)", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/secrets`));
+});
+
+server.tool("gitant_set_secret", "Set a secret (encrypted, capability-bound)", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Secret name"),
+  value: z.string().describe("Secret value"),
+}, async ({ repo, name, value }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/secrets`, { name, value }));
+});
+
+server.tool("gitant_get_secret", "Get a secret value (requires secrets/read capability)", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Secret name"),
+}, async ({ repo, name }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/secrets/${encodeURIComponent(name)}`));
+});
+
+server.tool("gitant_delete_secret", "Delete a secret", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Secret name"),
+}, async ({ repo, name }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/secrets/${encodeURIComponent(name)}`));
+});
+
+// Trust score tools
+server.tool("gitant_trust_show", "Show trust score and VC for an agent", {
+  did: z.string().describe("Agent DID"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.get(`/api/v1/agents/${encodeURIComponent(did)}/trust`));
+});
+
+server.tool("gitant_trust_issue", "Issue a trust score VC for an agent", {
+  did: z.string().describe("Agent DID"),
+}, async ({ did }) => {
+  return daemonCall(() => daemon.post(`/api/v1/agents/${encodeURIComponent(did)}/trust/issue`));
+});
+
+server.tool("gitant_trust_verify", "Verify a trust score VC", {
+  vc: z.string().describe("VC JWT to verify"),
+}, async ({ vc }) => {
+  return daemonCall(() => daemon.post("/api/v1/trust/verify", { vc }));
+});
+
+// Maintainers tools
+server.tool("gitant_list_maintainers", "List maintainers for a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+}, async ({ repo }) => {
+  return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/maintainers`));
+});
+
+server.tool("gitant_add_maintainer", "Add a maintainer to a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  did: z.string().describe("Maintainer DID"),
+}, async ({ repo, did }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/maintainers`, { did }));
+});
+
+server.tool("gitant_remove_maintainer", "Remove a maintainer from a repository", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  did: z.string().describe("Maintainer DID"),
+}, async ({ repo, did }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/maintainers/${encodeURIComponent(did)}`));
+});
+
+// Repo tokenization
+server.tool("gitant_tokenize_repo", "Deploy ERC-20 token tied to this repo", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().describe("Token name"),
+  symbol: z.string().describe("Token symbol"),
+}, async ({ repo, name, symbol }) => {
+  return daemonCall(() => daemon.post(`/api/v1/repos/${encodeURIComponent(repo)}/tokenize`, { name, symbol }));
+});
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
