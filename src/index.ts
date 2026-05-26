@@ -61,6 +61,18 @@ server.tool("discover_federation", "Discover federated gitant nodes on the P2P n
   return daemonCall(() => daemon.get(`/api/v1/federation/discover${query}`));
 });
 
+server.tool("get_bootstrap_peers", "List configured federation bootstrap multiaddrs", {}, async () => {
+  return daemonCall(() => daemon.get("/api/v1/network/bootstrap"));
+});
+
+server.tool("attest_agent", "Publish a cross-peer trust attestation for an agent DID", {
+  did: z.string().describe("Target agent DID"),
+  score: z.number().min(0).max(1).describe("Trust score between 0 and 1"),
+  reason: z.string().optional().describe("Optional attestation reason"),
+}, async ({ did, score, reason }) => {
+  return daemonCall(() => daemon.post(`/api/v1/agents/${encodeURIComponent(did)}/attest`, { score, reason }));
+});
+
 server.tool("get_repo", "Get repository metadata, refs, and latest commit", {
   repo: z.string().min(1).max(64).describe("Repository name"),
 }, async ({ repo }) => {
