@@ -2,6 +2,8 @@ export interface GitantClientOptions {
   baseUrl?: string;
   token?: string;
   timeoutMs?: number;
+  maxRetries?: number;
+  retryDelayMs?: number;
 }
 
 export interface StatusResponse {
@@ -53,11 +55,15 @@ export class GitantClient {
   private baseUrl: string;
   private token?: string;
   private timeoutMs: number;
+  private maxRetries: number;
+  private retryDelayMs: number;
 
   constructor(options: GitantClientOptions = {}) {
     this.baseUrl = (options.baseUrl ?? process.env.GITANT_DAEMON_URL ?? "http://localhost:7777").replace(/\/$/, "");
     this.token = options.token ?? process.env.GITANT_UCAN_TOKEN;
     this.timeoutMs = options.timeoutMs ?? 15_000;
+    this.maxRetries = options.maxRetries ?? 1;
+    this.retryDelayMs = options.retryDelayMs ?? 1_000;
   }
 
   setToken(token: string) {
@@ -105,11 +111,11 @@ export class GitantClient {
     return this.get("/api/v1/network/bootstrap");
   }
 
-  private async get<T>(path: string): Promise<T> {
+  async get<T>(path: string): Promise<T> {
     return this.request<T>(path, { method: "GET" });
   }
 
-  private async post<T>(path: string, body?: unknown): Promise<T> {
+  async post<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,29 +123,79 @@ export class GitantClient {
     });
   }
 
+  async put<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>(path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return this.request<T>(path, { method: "DELETE" });
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const headers: Record<string, string> = {
-        ...(init.headers as Record<string, string> | undefined),
-      };
-      if (this.token) {
-        headers.Authorization = `Bearer ${this.token}`;
+    const method = init.method || "GET";
+    const isGet = method === "GET";
+    const maxAttempts = isGet ? 1 + this.maxRetries : 1;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        console.warn(`[gitant] Retrying ${method} ${path} (attempt ${attempt + 1}/${maxAttempts}) after ${this.retryDelayMs}ms`);
+        await new Promise((r) => setTimeout(r, this.retryDelayMs));
       }
-      const response = await fetch(`${this.baseUrl}${path}`, {
-        ...init,
-        headers,
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        const text = await response.text().catch(() => "Unknown error");
-        throw new GitantError(`Daemon error ${response.status}: ${text}`, response.status);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+      try {
+        const headers: Record<string, string> = {
+          ...(init.headers as Record<string, string> | undefined),
+        };
+        if (this.token) {
+          headers.Authorization = `Bearer ${this.token}`;
+        }
+        const response = await fetch(`${this.baseUrl}${path}`, {
+          ...init,
+          headers,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          if (isGet && response.status >= 500 && attempt < maxAttempts - 1) {
+            console.warn(`[gitant] ${method} ${path} returned ${response.status}, will retry`);
+            continue;
+          }
+          const text = await response.text().catch(() => "Unknown error");
+          throw new GitantError(`Daemon error ${response.status}: ${text}`, response.status);
+        }
+
+        const text = await response.text();
+        try {
+          return JSON.parse(text) as T;
+        } catch {
+          throw new Error(`Daemon returned non-JSON response for ${method} ${path}: ${text.slice(0, 200)}`);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          const timeoutError = new Error(`Request timed out after ${this.timeoutMs}ms: ${method} ${path}`);
+          timeoutError.name = "TimeoutError";
+          if (isGet && attempt < maxAttempts - 1) {
+            console.warn(`[gitant] ${method} ${path} timed out, will retry`);
+            continue;
+          }
+          throw timeoutError;
+        }
+        if (isGet && attempt < maxAttempts - 1 && error instanceof Error && error.message.includes("fetch")) {
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeout);
       }
-      return response.json() as Promise<T>;
-    } finally {
-      clearTimeout(timeout);
     }
+
+    throw new Error("Unreachable");
   }
 }
 
