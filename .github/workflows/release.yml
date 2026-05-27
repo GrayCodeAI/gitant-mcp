@@ -32,7 +32,7 @@ jobs:
           tar czf release/gitant-mcp-${GITHUB_REF_NAME}.tar.gz \
             dist node_modules package.json README.md LICENSE
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: release/gitant-mcp-*.tar.gz
           generate_release_notes: true
