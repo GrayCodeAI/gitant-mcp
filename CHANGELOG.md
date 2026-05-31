@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
-- encodeURIComponent() on all URL-interpolated parameters (52 tools) — prevents path injection
+- encodeURIComponent() on all URL-interpolated parameters (154 tools) — prevents path injection
 - 15s AbortController timeout on all daemon fetch calls
 - GET retry with exponential backoff on 5xx/network errors (1 retry, 1s delay)
 - Zod validation hardened: .url() on webhook URLs, .regex() on hex colors, .min(1) on required strings
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-05-22
 
 ### Added
-- Initial release with 52 MCP tools
+- Initial release with 154 MCP tools
 - Repository CRUD, fork, clone, push, pull
 - File browsing and code search
 - Issue and PR management with comments

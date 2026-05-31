@@ -45,25 +45,27 @@ Point your MCP client at the built entrypoint (adjust the path):
 }
 ```
 
-## Tools (64)
+## Tools (161)
 
-### System
+All tool names are prefixed with `gitant_` when registered with the MCP server.
+
+### System (5)
 - `get_daemon_status` — Health + node status
 - `get_network_status` — libp2p peers and listen addresses
 - `discover_federation` — Federated node discovery (requires `--p2p`)
 - `get_bootstrap_peers` — List federation bootstrap multiaddrs
-- `attest_agent` — Cross-peer agent trust attestation
+- `whoami` — Current authenticated identity
+
+### Repository CRUD (5) + Git Push/Clone (3)
 - `list_repos`, `get_repo`, `create_repo`, `delete_repo`, `fork_repository`
 - `push_code` — Push git objects + ref updates
 - `push_packfile` — Push base64-encoded packfile + ref updates
 - `clone_repo`
 
-List tools accept optional `offset` and `limit` pagination parameters.
-
-### Files & search
+### Files & Search (3)
 - `get_file`, `list_files`, `search_code`
 
-### Issues & PRs
+### Issues (6) + Pull Requests (6)
 - `create_issue`, `list_issues`, `get_issue`, `close_issue`
 - `add_issue_comment`, `list_issue_comments`
 - `open_pr`, `list_prs`, `get_pr`, `review_pr`, `merge_pr`
@@ -71,15 +73,49 @@ List tools accept optional `offset` and `limit` pagination parameters.
 
 Use **string IDs** for issues/PRs (e.g. `issue-1734567890123456789`, `pr-1734567890123456789`).
 
-### Git refs & commits
+### Git Refs & Commits (5)
 - `list_refs`, `create_branch`, `get_commit_log`, `diff_commits`, `get_commit_parents`
 
-### Agents & UCAN
-- `generate_did`, `resolve_did`, `list_agents`, `get_agent`, `get_agent_profile`
+### Agents, DID & UCAN (12)
+- `list_agents`, `get_agent`, `generate_did`, `resolve_did`
 - `delegate_capability`, `verify_ucan`, `revoke_ucan`, `list_revocations`
+- `attest_agent`, `identity_new`, `identity_export`, `identity_sign`
 
-### Webhooks, tasks, releases, labels, stars, protection, activity
-- Full CRUD/list tools for each domain (see `src/index.ts`)
+### Trust (3)
+- `trust_show`, `trust_issue`, `trust_verify`
+
+### Maintainers (3)
+- `list_maintainers`, `add_maintainer`, `remove_maintainer`
+
+### Tasks (5)
+- `list_tasks`, `create_task`, `claim_task`, `complete_task`, `fail_task`
+
+### Releases (4), Labels (3), Stars (3), Branch Protection (4)
+- Full CRUD tools for each domain
+
+### Webhooks (3), Activity/Changelog (2)
+- `list_webhooks`, `register_webhook`, `delete_webhook`
+- `get_activity`, `get_changelog`
+
+### CI/CD: Pipelines (3), Runners (3), Variables (3), Deployments (4), Environments (3)
+- Full lifecycle management for CI/CD infrastructure
+
+### Notifications (3), Snippets (4), Milestones (3), Epics (3)
+- CRUD tools for each domain
+
+### Bounties (6), Todos (3), Secrets (4), Certificates (5)
+- Full lifecycle management including escrow and signing
+
+### IPFS (2), Sync (2), Names (3), Mirrors (2), Seed Nodes (3)
+- Decentralized storage and networking tools
+
+### Community: Kanban (2), Workspaces (2), Forum (2), Chat (2), Governance (3)
+- Collaboration and community management tools
+
+### Advanced: Stacked Diffs (2), Time Tracking (3), Peer Management (1), Repo Tokenization (1)
+- Power-user and advanced workflow tools
+
+List tools accept optional `offset` and `limit` pagination parameters.
 
 ## Releases
 

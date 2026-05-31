@@ -497,6 +497,14 @@ server.tool("gitant_delete_label", "Delete a label from a repository", {
   return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/labels/${encodeURIComponent(name)}`));
 });
 
+server.tool("gitant_update_label_color", "Update the color of an existing label", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  name: z.string().min(1).describe("Label name"),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).describe("New label color (hex, e.g. #ff0000)"),
+}, async ({ repo, name, color }) => {
+  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/labels/${encodeURIComponent(name)}`, { color }));
+});
+
 // Star tools
 server.tool("gitant_star_repo", "Star a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
@@ -752,6 +760,15 @@ server.tool("gitant_delete_snippet", "Delete a code snippet", {
   return daemonCall(() => daemon.delete(`/api/v1/snippets/${encodeURIComponent(snippet_id)}`));
 });
 
+server.tool("gitant_update_snippet", "Update a code snippet", {
+  snippet_id: z.string().min(1).describe("Snippet ID"),
+  title: z.string().min(1).optional().describe("New title"),
+  content: z.string().optional().describe("New content"),
+  visibility: z.enum(["public", "private"]).optional().describe("New visibility"),
+}, async ({ snippet_id, title, content, visibility }) => {
+  return daemonCall(() => daemon.put(`/api/v1/snippets/${encodeURIComponent(snippet_id)}`, { title, content, visibility }));
+});
+
 // Milestone tools
 server.tool("gitant_list_milestones", "List milestones for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
@@ -778,6 +795,24 @@ server.tool("gitant_get_milestone", "Get a milestone", {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/milestones/${encodeURIComponent(milestone_id)}`));
 });
 
+server.tool("gitant_update_milestone", "Update a milestone", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  milestone_id: z.string().min(1).describe("Milestone ID"),
+  title: z.string().min(1).optional().describe("New title"),
+  description: z.string().optional().describe("New description"),
+  due_date: z.string().optional().describe("New due date (ISO 8601)"),
+  state: z.enum(["open", "closed"]).optional().describe("New state"),
+}, async ({ repo, milestone_id, title, description, due_date, state }) => {
+  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/milestones/${encodeURIComponent(milestone_id)}`, { title, description, due_date, state }));
+});
+
+server.tool("gitant_close_milestone", "Close a milestone", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  milestone_id: z.string().min(1).describe("Milestone ID"),
+}, async ({ repo, milestone_id }) => {
+  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/milestones/${encodeURIComponent(milestone_id)}`, { state: "closed" }));
+});
+
 // Epic tools
 server.tool("gitant_list_epics", "List epics for a repository", {
   repo: z.string().min(1).max(64).describe("Repository name"),
@@ -799,6 +834,23 @@ server.tool("gitant_get_epic", "Get an epic", {
   epic_id: z.string().min(1).describe("Epic ID"),
 }, async ({ repo, epic_id }) => {
   return daemonCall(() => daemon.get(`/api/v1/repos/${encodeURIComponent(repo)}/epics/${encodeURIComponent(epic_id)}`));
+});
+
+server.tool("gitant_update_epic", "Update an epic", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  epic_id: z.string().min(1).describe("Epic ID"),
+  title: z.string().min(1).optional().describe("New title"),
+  description: z.string().optional().describe("New description"),
+  state: z.enum(["open", "closed"]).optional().describe("New state"),
+}, async ({ repo, epic_id, title, description, state }) => {
+  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/epics/${encodeURIComponent(epic_id)}`, { title, description, state }));
+});
+
+server.tool("gitant_delete_epic", "Delete an epic", {
+  repo: z.string().min(1).max(64).describe("Repository name"),
+  epic_id: z.string().min(1).describe("Epic ID"),
+}, async ({ repo, epic_id }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/repos/${encodeURIComponent(repo)}/epics/${encodeURIComponent(epic_id)}`));
 });
 
 // Kanban tools
@@ -861,6 +913,12 @@ server.tool("gitant_complete_todo", "Mark a todo as complete", {
   todo_id: z.string().min(1).describe("Todo ID"),
 }, async ({ todo_id }) => {
   return daemonCall(() => daemon.post(`/api/v1/todos/${encodeURIComponent(todo_id)}/complete`));
+});
+
+server.tool("gitant_delete_todo", "Delete a todo item", {
+  todo_id: z.string().min(1).describe("Todo ID"),
+}, async ({ todo_id }) => {
+  return daemonCall(() => daemon.delete(`/api/v1/todos/${encodeURIComponent(todo_id)}`));
 });
 
 // Changelog tool
