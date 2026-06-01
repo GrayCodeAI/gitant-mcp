@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Community tools wired to live daemon routes: discussions (`gitant_list_discussions`,
+  `gitant_get_discussion`, `gitant_create_discussion`, `gitant_answer_discussion`,
+  `gitant_accept_discussion_answer`, `gitant_upvote_discussion`), projects/kanban
+  (`gitant_list_projects`, `gitant_get_project`, `gitant_create_project`,
+  `gitant_add_project_card`, `gitant_move_project_card`), and wiki
+  (`gitant_list_wiki_pages`, `gitant_get_wiki_page`, `gitant_create_wiki_page`,
+  `gitant_update_wiki_page`, `gitant_delete_wiki_page`).
+
+### Removed
+- Orphaned `gitant_*_kanban_board`, `gitant_*_forum_thread`, and
+  `gitant_*_chat_message` tools that targeted endpoints the daemon never served.
+  Forum threads are now covered by discussions; kanban boards by projects.
+
 ### Security
 - encodeURIComponent() on all URL-interpolated parameters (154 tools) — prevents path injection
 - 15s AbortController timeout on all daemon fetch calls
