@@ -1,12 +1,36 @@
-# gitant-mcp
+<div align="center">
 
-MCP (Model Context Protocol) server for [gitant](https://github.com/GrayCodeAI/gitant-daemon). Gives AI agents structured access to a gitant node via the daemon REST API.
+# ⭐ gitant-mcp
 
-**Install and run from GitHub** — [releases](https://github.com/GrayCodeAI/gitant-mcp/releases) or clone + build.
+**MCP server for Gitant** — 160+ tools for AI agents to interact with Gitant nodes.
 
-**Full setup guide:** [gitant-daemon docs/QUICKSTART.md](https://github.com/GrayCodeAI/gitant-daemon/blob/main/docs/QUICKSTART.md)
+![License](https://img.shields.io/badge/license-MIT-blue)
+[![Release](https://img.shields.io/github/v/release/GrayCodeAI/gitant-mcp)](https://github.com/GrayCodeAI/gitant-mcp/releases)
+[![Node.js](https://img.shields.io/badge/node-20+-green)](https://nodejs.org/)
+[![CI](https://github.com/GrayCodeAI/gitant-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/GrayCodeAI/gitant-mcp/actions)
 
-## Install from GitHub
+**Model Context Protocol** — Give your AI agents superpowers with 160+ tools.
+
+</div>
+
+---
+
+## 🌟 What is Gitant?
+
+**Gitant** is a decentralized Git hosting platform for solo developers and AI agents.
+
+| Component | Role |
+|-----------|------|
+| [`gitant-cli`](https://github.com/GrayCodeAI/gitant-cli) | **Developer CLI** — push/pull, issues, PRs, agents |
+| [`gitant-daemon`](https://github.com/GrayCodeAI/gitant-daemon) | **Server** — HTTP API, git smart HTTP, optional P2P |
+| [`gitant-web`](https://github.com/GrayCodeAI/gitant-web) | **Dashboard** — Browser UI (Next.js) |
+| [`gitant-mcp`](https://github.com/GrayCodeAI/gitant-mcp) | **Agents** — MCP tools for AI integration |
+
+---
+
+## 🚀 Quick Start
+
+### Install from GitHub
 
 ```bash
 git clone https://github.com/GrayCodeAI/gitant-mcp.git
@@ -15,20 +39,20 @@ make build
 make run
 ```
 
-Requires **Node.js 20+**.
+### Run from release tarball
 
-Or download a tagged [release tarball](https://github.com/GrayCodeAI/gitant-mcp/releases), extract, and run `node dist/index.js` (pre-built `dist/` is included in release artifacts).
+```bash
+# Download latest release
+curl -LO https://github.com/GrayCodeAI/gitant-mcp/releases/latest/download/gitant-mcp.tar.gz
+tar xzf gitant-mcp.tar.gz
+node dist/index.js
+```
 
-## Environment
+---
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GITANT_DAEMON_URL` | `http://localhost:7777` | Daemon base URL |
-| `GITANT_UCAN_TOKEN` | — | Bearer UCAN token (**required for write operations**) |
+## ⚙️ MCP Client Config
 
-## MCP client config
-
-Point your MCP client at the built entrypoint (adjust the path):
+Point your MCP client at the built entrypoint:
 
 ```json
 {
@@ -45,86 +69,139 @@ Point your MCP client at the built entrypoint (adjust the path):
 }
 ```
 
-## Tools (161)
+---
 
-All tool names are prefixed with `gitant_` when registered with the MCP server.
+## 📖 Environment Variables
 
-### System (5)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GITANT_DAEMON_URL` | `http://localhost:7777` | Daemon base URL |
+| `GITANT_UCAN_TOKEN` | — | Bearer UCAN token (**required for write ops**) |
+
+---
+
+## 🛠️ Tools (161)
+
+All tools are prefixed with `gitant_`. Split into categories:
+
+### 🔧 System (5)
 - `get_daemon_status` — Health + node status
 - `get_network_status` — libp2p peers and listen addresses
 - `discover_federation` — Federated node discovery (requires `--p2p`)
 - `get_bootstrap_peers` — List federation bootstrap multiaddrs
 - `whoami` — Current authenticated identity
 
-### Repository CRUD (5) + Git Push/Clone (3)
+### 📦 Repos (8)
 - `list_repos`, `get_repo`, `create_repo`, `delete_repo`, `fork_repository`
 - `push_code` — Push git objects + ref updates
-- `push_packfile` — Push base64-encoded packfile + ref updates
+- `push_packfile` — Push base64 packfile + ref updates
 - `clone_repo`
 
-### Files & Search (3)
+### 📄 Files & Search (3)
 - `get_file`, `list_files`, `search_code`
 
-### Issues (6) + Pull Requests (6)
+### 🐛 Issues (6) + 🔀 Pull Requests (6)
 - `create_issue`, `list_issues`, `get_issue`, `close_issue`
 - `add_issue_comment`, `list_issue_comments`
 - `open_pr`, `list_prs`, `get_pr`, `review_pr`, `merge_pr`
 - `list_pr_comments`
 
-Use **string IDs** for issues/PRs (e.g. `issue-1734567890123456789`, `pr-1734567890123456789`).
+> 💡 **Tip**: Use string IDs (e.g., `issue-1734567890123456789`, `pr-1734567890123456789`)
 
-### Git Refs & Commits (5)
+### 🔀 Git Refs & Commits (5)
 - `list_refs`, `create_branch`, `get_commit_log`, `diff_commits`, `get_commit_parents`
 
-### Agents, DID & UCAN (12)
+### 🦾 Agents & Identity (12)
 - `list_agents`, `get_agent`, `generate_did`, `resolve_did`
 - `delegate_capability`, `verify_ucan`, `revoke_ucan`, `list_revocations`
 - `attest_agent`, `identity_new`, `identity_export`, `identity_sign`
 
-### Trust (3)
+### 🤝 Trust & Maintainers (6)
 - `trust_show`, `trust_issue`, `trust_verify`
-
-### Maintainers (3)
 - `list_maintainers`, `add_maintainer`, `remove_maintainer`
 
-### Tasks (5)
+### 📋 Tasks (5)
 - `list_tasks`, `create_task`, `claim_task`, `complete_task`, `fail_task`
 
-### Releases (4), Labels (3), Stars (3), Branch Protection (4)
-- Full CRUD tools for each domain
+### 🏷️ Labels & Releases (7)
+- `list_labels`, `create_label`, `delete_label`
+- `list_releases`, `get_release`, `create_release`, `delete_release`
 
-### Webhooks (3), Activity/Changelog (2)
+### ⭐ Stars (3)
+- `star_repo`, `unstar_repo`, `get_star_count`
+
+### 🔒 Branch Protection (4)
+- `get_branch_protection`, `set_branch_protection`, `delete_branch_protection`, `list_branch_protections`
+
+### 📡 Webhooks (3)
 - `list_webhooks`, `register_webhook`, `delete_webhook`
+
+### 📊 Activity (2)
 - `get_activity`, `get_changelog`
 
-### CI/CD: Pipelines (3), Runners (3), Variables (3), Deployments (4), Environments (3)
-- Full lifecycle management for CI/CD infrastructure
+### 🔄 CI/CD (16)
+- **Pipelines**: `list_pipelines`, `get_pipeline`, `create_pipeline`
+- **Runners**: `list_runners`, `get_runner`, `create_runner`
+- **Variables**: `list_variables`, `create_variable`, `update_variable`
+- **Deployments**: `list_deployments`, `create_deployment`, `rollback_deployment`, `get_deployment_status`
+- **Environments**: `list_environments`, `create_environment`, `delete_environment`
 
-### Notifications (3), Snippets (4), Milestones (3), Epics (3)
-- CRUD tools for each domain
+### 📢 Notifications (3)
+- `list_notifications`, `mark_notification_read`, `mark_all_read`
 
-### Bounties (6), Todos (3), Secrets (4), Certificates (5)
-- Full lifecycle management including escrow and signing
+### 📝 Code Snippets (4)
+- `list_snippets`, `get_snippet`, `create_snippet`, `delete_snippet`
 
-### IPFS (2), Sync (2), Names (3), Mirrors (2), Seed Nodes (3)
-- Decentralized storage and networking tools
+### 🎯 Milestones & Epics (6)
+- `list_milestones`, `create_milestone`, `get_milestone`
+- `list_epics`, `create_epic`, `get_epic`
 
-### Community: Kanban (2), Workspaces (2), Forum (2), Chat (2), Governance (3)
-- Collaboration and community management tools
+### 💰 Bounties (6)
+- `list_bounties`, `create_bounty`, `get_bounty`, `claim_bounty`, `complete_bounty`, `fund_bounty`
 
-### Advanced: Stacked Diffs (2), Time Tracking (3), Peer Management (1), Repo Tokenization (1)
-- Power-user and advanced workflow tools
+### ✅ Todos (3)
+- `list_todos`, `create_todo`, `complete_todo`
 
-List tools accept optional `offset` and `limit` pagination parameters.
+### 🔐 Secrets & Certificates (9)
+- **Secrets**: `list_secrets`, `create_secret`, `update_secret`, `delete_secret`
+- **Certificates**: `list_certificates`, `create_certificate`, `revoke_certificate`, `get_certificate`, `verify_certificate`
 
-## Releases
+### 🌐 IPFS & Sync (4)
+- `ipfs_pin`, `ipfs_unpin`
+- `sync_status`, `sync_start`
 
-Push a version tag — GitHub Actions builds and attaches a tarball:
+### 🔗 Federation (5)
+- `list_mirrors`, `add_mirror`, `remove_mirror`
+- `list_seed_nodes`, `add_seed_node`
 
-```bash
-git tag v0.1.0 && git push origin v0.1.0
-```
+### 💬 Community (19)
+- **Discussions**: `list_discussions`, `get_discussion`, `create_discussion`, `answer_discussion`, `accept_discussion_answer`, `upvote_discussion`
+- **Projects/Kanban**: `list_projects`, `get_project`, `create_project`, `add_project_card`, `move_project_card`
+- **Wiki**: `list_wiki_pages`, `get_wiki_page`, `create_wiki_page`, `update_wiki_page`, `delete_wiki_page`
+- **Governance**: `list_proposals`, `create_proposal`, `vote_proposal`
 
-See [Release workflow](.github/workflows/release.yml).
+### 🧠 Advanced (6)
+- **Stacked Diffs**: `create_stacked_diff`, `reorder_stacked_diff`
+- **Time Tracking**: `start_timer`, `stop_timer`, `get_time_entries`
+- **Peer Management**: `list_peers`
+- **Repo Tokenization**: `tokenize_repo`
 
-See [PLAN.md](https://github.com/GrayCodeAI/gitant-daemon/blob/main/PLAN.md) in `gitant-daemon` for the full product roadmap.
+---
+
+## 📋 License
+
+**MIT** — see [LICENSE](LICENSE).
+
+---
+
+<div align="center">
+
+### 🔗 Related Repos
+
+[gitant-cli](https://github.com/GrayCodeAI/gitant-cli) •
+[gitant-daemon](https://github.com/GrayCodeAI/gitant-daemon) •
+[gitant-web](https://github.com/GrayCodeAI/gitant-web)
+
+*Made with ❤️ for AI agents*
+
+</div>
