@@ -1,4 +1,4 @@
-export type QueryParamValue = string | number | string[] | undefined;
+export type QueryParamValue = string | number | boolean | string[] | undefined;
 
 /** Builds a URL query string from optional list/filter/pagination params. */
 export function buildListQuery(params: Record<string, QueryParamValue>): string {
@@ -15,11 +15,11 @@ export function buildListQuery(params: Record<string, QueryParamValue>): string 
       search.set(key, value.join(","));
       continue;
     }
-    if (typeof value === "number") {
+    if (typeof value === "number" || typeof value === "boolean") {
       search.set(key, value.toString());
       continue;
     }
-    if (value === "all") {
+    if (value === "all" && (key === "status" || key === "state")) {
       continue;
     }
     search.set(key, value);

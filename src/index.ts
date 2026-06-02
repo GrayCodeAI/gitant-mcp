@@ -317,7 +317,7 @@ server.registerTool("gitant_create_branch", { description: "Create a new branch 
 server.registerTool("gitant_get_commit_log", { description: "Get commit history for a repository", inputSchema: {
   repo: z.string().min(1).max(64).describe("Repository name"),
   ref: z.string().optional().describe("Branch or tag name"),
-  limit: z.number().int().positive().max(10000).optional().describe("Max number of commits to return"),
+  limit: z.number().int().positive().max(1000).optional().describe("Max number of commits to return"),
 } }, async ({ repo, ref, limit }) => {
   const params = new URLSearchParams();
   if (ref) params.set("ref", ref);
@@ -539,11 +539,11 @@ server.registerTool("gitant_set_branch_protection", { description: "Set protecti
   require_approval: z.boolean().optional().describe("Require approval before merging"),
   no_force_push: z.boolean().optional().describe("Disallow force pushes"),
 } }, async ({ repo, branch, require_pr, require_approval, no_force_push }) => {
-  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`, {
-    require_pr: require_pr || false,
-    require_approval: require_approval || false,
-    no_force_push: no_force_push || false,
-  }));
+  const body: Record<string, boolean> = {};
+  if (require_pr !== undefined) body.require_pr = require_pr;
+  if (require_approval !== undefined) body.require_approval = require_approval;
+  if (no_force_push !== undefined) body.no_force_push = no_force_push;
+  return daemonCall(() => daemon.put(`/api/v1/repos/${encodeURIComponent(repo)}/protections/${encodeURIComponent(branch)}`, body));
 });
 
 server.registerTool("gitant_remove_branch_protection", { description: "Remove protection rules for a branch", inputSchema: {
@@ -718,7 +718,7 @@ server.registerTool("gitant_list_notifications", { description: "List notificati
   unread: z.boolean().optional().describe("Only unread notifications"),
   ...paginationSchema,
 } }, async ({ unread, offset, limit }) => {
-  const url = `/api/v1/notifications${buildListQuery({ offset, limit, unread: unread ? "true" : undefined })}`;
+  const url = `/api/v1/notifications${buildListQuery({ offset, limit, unread })}`;
   return daemonCall(() => daemon.get(url));
 });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GitantClient } from "../src/client.js";
+import { GitantClient } from "./client.js";
 
 describe("GitantClient", () => {
   it("builds encoded repo paths", async () => {
